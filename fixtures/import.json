@@ -1,0 +1,18 @@
+[
+  {
+    "original_id": "DEMO-001",
+    "title": "Синтетический сценарий импорта",
+    "description": "Учебная запись для проверки импорта JSON",
+    "trl": 45292,
+    "readiness": null,
+    "status": "unknown"
+  },
+  {
+    "original_id": "DEMO-002",
+    "title": "Контроль учебного процесса",
+    "description": "Полностью вымышленные данные",
+    "trl": 4,
+    "readiness": 2,
+    "status": "no"
+  }
+]

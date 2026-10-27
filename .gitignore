@@ -1,0 +1,18 @@
+node_modules/
+.next/
+.env*
+!.env.example
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.local/
+tmp/
+output/
+# Corporate references and local imports are never source assets.
+*.pdf
+*.xlsx
+*.xls
+/imports/
+/references/
+/ctv_ux_comparison.html

@@ -1,0 +1,7 @@
+{
+  "namespace": "synthetic-import-example-v1",
+  "sourceName": "Синтетический пример CSV/JSON",
+  "synthetic": true,
+  "context": "synthetic-lab",
+  "assessedAt": "2026-01-01T00:00:00Z"
+}

@@ -1,0 +1,12 @@
+{
+  "columns": {
+    "externalId": "original_id",
+    "name": "title",
+    "description": "description",
+    "application_trl": "trl",
+    "organizational_readiness": "readiness",
+    "implementation": "status"
+  },
+  "references": {},
+  "delimiter": ","
+}
