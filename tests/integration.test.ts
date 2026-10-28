@@ -6,6 +6,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { eq, sql, count } from "drizzle-orm";
 import { createDatabase, type Database } from "../src/db/client";
 import * as s from "../src/db/schema";
+import { scenarioAnalytics } from "../src/server/analytics";
 import { seedDatabase } from "../src/server/seed";
 import {
   createScenario,
@@ -185,6 +186,42 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
       )[0].isSynthetic,
     ).toBe(false);
     await db.delete(s.scenarios).where(eq(s.scenarios.id, id));
+  });
+  it("аналитика дедуплицирует методы и сохраняет разные технологические направления", async () => {
+    const refs = await getReferences(db);
+    const original = (
+      await scenarioAnalytics({ q: "SYN-0012", pageSize: 1 }, db)
+    ).rows[0];
+    const otherTechnology = refs.technologies.find(
+      (t) => !original.directions.some((d) => d.id === t.directionId),
+    )!;
+    const method = refs.methods.find(
+      (m) => m.technologyId === otherTechnology.id,
+    )!;
+    await db
+      .insert(s.scenarioTechnologies)
+      .values({
+        scenarioId: original.id,
+        methodId: method.id,
+        isSynthetic: true,
+      });
+    try {
+      const data = await scenarioAnalytics({ q: "SYN-0012" }, db);
+      expect(data.total).toBe(1);
+      expect(data.rows[0].directions).toHaveLength(2);
+      expect(
+        (
+          await scenarioAnalytics(
+            { q: "SYN-0012", directionId: otherTechnology.directionId },
+            db,
+          )
+        ).rows[0].directions,
+      ).toHaveLength(1);
+    } finally {
+      await db
+        .delete(s.scenarioTechnologies)
+        .where(sql`scenario_id=${original.id} and method_id=${method.id}`);
+    }
   });
   it("создаёт сценарий и читает соответствующий ID", async () => {
     const scenario = await createScenario(
@@ -450,5 +487,33 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     expect(result.total).toBe(2500);
     expect(result.items).toHaveLength(12);
     expect(result.pages).toBe(209);
+    const start = performance.now();
+    const analytics = await scenarioAnalytics(
+      { q: "SYN-", page: 200, pageSize: 1 },
+      db,
+    );
+    expect(analytics.total).toBe(2500);
+    expect(analytics.rows).toHaveLength(2500);
+    expect(new Set(analytics.rows.map((r) => r.id)).size).toBe(2500);
+    expect(analytics.rows.some((r) => r.maturity === null)).toBe(true);
+    const filtered = await scenarioAnalytics(
+      { q: "SYN-", maturityMin: 2, maturityMax: 3, readinessMin: 4 },
+      db,
+    );
+    expect(
+      filtered.rows.every(
+        (r) => r.maturity! >= 2 && r.maturity! <= 3 && r.readiness! >= 4,
+      ),
+    ).toBe(true);
+    const other = await scenarioAnalytics(
+      { q: "SYN-", context: "unassessed" },
+      db,
+    );
+    expect(
+      other.rows.every((r) => r.maturity === null && r.readiness === null),
+    ).toBe(true);
+    console.log(
+      `Analytics 2500: ${Math.round(performance.now() - start)}ms / three queries (${process.env.TEST_DATABASE_URL ? "PostgreSQL" : "PGlite"})`,
+    );
   });
 });

@@ -10,7 +10,8 @@ import {
 import { ScenarioFilters } from "./filters";
 import { ScenarioCatalog } from "./catalog";
 import { Inspector } from "./inspector";
-import { RadarWorkspace } from "@/components/radar-workspace";
+import { AnalyticsView } from "./analytics-view";
+import { scenarioAnalytics } from "@/server/analytics";
 import {
   views,
   workspaceHref,
@@ -36,10 +37,11 @@ export async function Workspace({
       </div>
     );
   const query = parsed.query;
-  const [result, references, item] = await Promise.all([
+  const [result, references, item, analytics] = await Promise.all([
     listScenarios(query),
     getReferences(),
     query.selected ? getScenario(query.selected) : null,
+    view === "catalog" ? null : scenarioAnalytics(query),
   ]);
   const related = item ? await relatedObjects(item.scenario.id) : null;
   return (
@@ -91,7 +93,7 @@ export async function Workspace({
                 {view === "radar" && (
                   <div
                     className="density-switch"
-                    aria-label="Плотность будущей визуализации"
+                    aria-label="Плотность визуализации"
                   >
                     {(["groups", "points"] as const).map((mode) => (
                       <Link
@@ -107,20 +109,9 @@ export async function Workspace({
                   </div>
                 )}
               </div>
-              {view === "radar" ? (
-                <RadarWorkspace />
-              ) : (
-                <div className="maturity-placeholder">
-                  <div className="matrix-outline" aria-hidden="true" />
-                  <h3>Матрица зрелости</h3>
-                  <p>Представление РЗ × ОГ будет реализовано в части №2Б.</p>
-                </div>
+              {analytics && (
+                <AnalyticsView data={analytics} query={query} view={view} />
               )}
-              <div className="stage-note">
-                {view === "radar"
-                  ? "Подложка рабочего пространства. Точки и группировка появятся после утверждения №2А."
-                  : "Общие фильтры и выбор сценария сохранены. Аналитические значения пока не отображаются."}
-              </div>
             </section>
             <details className="surface quick-scenarios">
               <summary>

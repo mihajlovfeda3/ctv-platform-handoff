@@ -2172,10 +2172,9 @@ tbody tr:hover {
 }
 
 .shared-filter-row {
-  grid-template-columns: minmax(180px, 1.3fr) repeat(
-      3,
-      minmax(170px, 1fr)
-    ) minmax(130px, 0.7fr) minmax(130px, 0.7fr) auto;
+  grid-template-columns:
+    minmax(180px, 1.3fr) repeat(3, minmax(170px, 1fr))
+    minmax(130px, 0.7fr) minmax(130px, 0.7fr) auto;
 }
 @media (max-width: 1250px) {
   .shared-filter-row {
@@ -2185,5 +2184,200 @@ tbody tr:hover {
 @media (max-width: 800px) {
   .shared-filter-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Scenario analytics: compact controls, shared workspace A. */
+.range-filter {
+  border: 0;
+  padding: 0 6px;
+  min-width: 130px;
+  position: relative;
+  color: #455f77;
+  font-size: 11px;
+}
+.range-filter legend {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0;
+}
+.range-filter output {
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.range-track {
+  height: 4px;
+  position: relative;
+  margin: 9px 1px 8px;
+  border-radius: 4px;
+}
+.range-track input[type="range"] {
+  position: absolute;
+  inset: -8px 0 auto;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+  box-shadow: none;
+}
+.range-track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #2274c5;
+  pointer-events: auto;
+  cursor: grab;
+  box-shadow: 0 0 0 1px #2274c5;
+}
+.range-track input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #2274c5;
+  pointer-events: auto;
+  cursor: grab;
+}
+.range-track input:focus-visible {
+  outline: 2px solid #2274c5;
+  outline-offset: 6px;
+}
+.range-ends {
+  display: flex;
+  justify-content: space-between;
+  color: #8091a3;
+}
+.shared-filter-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+}
+.interactive-radar {
+  display: block;
+  width: 100%;
+  height: min(62vh, 660px);
+  min-height: 400px;
+  touch-action: none;
+  cursor: grab;
+}
+.analytical-stage {
+  position: relative;
+}
+.radar-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 8px 22px 0;
+  font-size: 12px;
+}
+.radar-tools button,
+.unknown-button {
+  border: 1px solid #dbe5ef;
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px 11px;
+  color: #31577d;
+  cursor: pointer;
+}
+.radar-mark {
+  cursor: pointer;
+  outline: none;
+}
+.radar-mark:focus {
+  filter: drop-shadow(0 0 3px #112d52);
+  stroke: #112d52;
+  stroke-width: 2px;
+}
+.analytics-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 10px 20px;
+  font-size: 11px;
+  border-top: 1px solid #e8eef5;
+}
+.unknown-button {
+  margin: 10px 20px;
+  font-size: 12px;
+}
+.group-members {
+  display: grid;
+  gap: 8px;
+}
+.group-members a {
+  display: block;
+  border-bottom: 1px solid #e3eaf0;
+  padding: 8px 0;
+  font-size: 12px;
+}
+.group-members a:hover {
+  color: #2274c5;
+}
+.group-inspector {
+  z-index: 12;
+}
+.matrix-scroll {
+  overflow-x: auto;
+  padding: 20px;
+}
+.maturity-matrix {
+  table-layout: fixed;
+  min-width: 520px;
+}
+.maturity-matrix caption {
+  text-align: left;
+  font-size: 12px;
+  color: #59728a;
+  margin-bottom: 16px;
+}
+.maturity-matrix td,
+.maturity-matrix th {
+  padding: 3px !important;
+  text-align: center;
+  font-size: 12px;
+  white-space: normal;
+}
+.maturity-matrix td:first-child,
+.maturity-matrix th:first-child {
+  width: 75px !important;
+}
+.maturity-matrix button {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid #d7e5f0;
+  border-radius: 5px;
+  font-size: 17px;
+  color: #193b62;
+  cursor: pointer;
+}
+.maturity-matrix button[aria-pressed="true"] {
+  outline: 3px solid #ec963b;
+  outline-offset: -3px;
+}
+.matrix-total {
+  font-size: 12px;
+  color: #59728a;
+}
+.analytics-empty {
+  padding: 20px;
+  color: #657b92;
+}
+@media (max-width: 800px) {
+  .shared-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .interactive-radar {
+    min-height: 400px;
+  }
+  .analytics-legend {
+    gap: 8px;
   }
 }

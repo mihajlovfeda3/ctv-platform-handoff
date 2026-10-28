@@ -58,6 +58,14 @@ const optionalScore = (max: number) =>
 export const scenarioQuery = z
   .object({
     selected: optionalId,
+    cluster: z.string().max(120).optional(),
+    cell: z
+      .string()
+      .regex(/^(unknown|[1-5]:[1-7])$/)
+      .optional(),
+    zoom: z.coerce.number().min(1).max(8).default(1),
+    panX: z.coerce.number().min(-10000).max(10000).default(0),
+    panY: z.coerce.number().min(-10000).max(10000).default(0),
     mode: z.enum(["groups", "points"]).default("groups"),
     from: z.enum(["catalog", "radar", "maturity"]).default("catalog"),
     sort: z

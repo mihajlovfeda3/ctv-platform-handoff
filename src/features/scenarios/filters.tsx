@@ -1,5 +1,6 @@
 "use client";
-import { useState, useTransition } from "react";
+import { RangeFilter } from "./range-filter";
+import { useState, useTransition, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -11,6 +12,7 @@ import {
 import { scenarioQuery, type ScenarioQuery } from "@/domain/scenario";
 import type { getReferences } from "@/server/scenarios";
 import { workspaceHref, type ScenarioView } from "./navigation";
+const subscribeHydration = () => () => {};
 export function ScenarioFilters({
   query,
   references,
@@ -23,6 +25,11 @@ export function ScenarioFilters({
   invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
+  const ready = useSyncExternalStore(
+    subscribeHydration,
+    () => true,
+    () => false,
+  );
   const [pending, startTransition] = useTransition();
   const queryKey = JSON.stringify([query, invalidDraft]);
   const [previousKey, setPreviousKey] = useState(queryKey);
@@ -48,6 +55,7 @@ export function ScenarioFilters({
     <label key={key}>
       <span>{label}</span>
       <select
+        disabled={!ready}
         name={key}
         value={draft[key] ?? ""}
         onChange={() => {}}
@@ -79,6 +87,42 @@ export function ScenarioFilters({
       router.replace(workspaceHref(view, query, patch), { scroll: false }),
     );
   }
+  function commitRange() {
+    if (Object.keys(filterErrors(draft)).length) return;
+    const patch: Record<string, string | undefined> = { page: undefined };
+    for (const [key, value] of Object.entries(draft))
+      patch[key] = value || undefined;
+    startTransition(() =>
+      router.replace(workspaceHref(view, query, patch), { scroll: false }),
+    );
+  }
+  const range = (
+    prefix: "maturity" | "readiness",
+    label: string,
+    max: number,
+  ) => {
+    const low = Number(draft[prefix + "Min"] || draft[prefix] || 1),
+      high = Number(draft[prefix + "Max"] || draft[prefix] || max);
+    return (
+      <RangeFilter
+        disabled={!ready}
+        label={label}
+        prefix={prefix}
+        max={max}
+        low={low}
+        high={high}
+        onCommit={commitRange}
+        onChange={(lo, hi) =>
+          setDraft((prev) => ({
+            ...prev,
+            [prefix]: "",
+            [prefix + "Min"]: lo === 1 && hi === max ? "" : String(lo),
+            [prefix + "Max"]: lo === 1 && hi === max ? "" : String(hi),
+          }))
+        }
+      />
+    );
+  };
   return (
     <form
       className="surface shared-filters"
@@ -95,12 +139,13 @@ export function ScenarioFilters({
       }}
       onChange={(e) => apply(e.target as unknown as HTMLInputElement)}
       aria-label="Общие фильтры сценариев"
-      aria-busy={pending}
+      aria-busy={pending || !ready}
     >
       <div className="shared-filter-row">
         <label className="scenario-search">
           <span>ПОИСК</span>
           <input
+            disabled={!ready}
             name="q"
             value={draft.q ?? ""}
             onChange={() => {}}
@@ -126,7 +171,8 @@ export function ScenarioFilters({
           references.directions,
           "Все направления",
         )}
-        {field("maturity", "РЫНОЧНАЯ ЗРЕЛОСТЬ", options(5), "Любая зрелость")}
+        {range("maturity", "Рыночная зрелость (РЗ)", 5)}
+        {range("readiness", "Организационная готовность (ОГ)", 7)}
         {field(
           "implementation",
           "РЕАЛИЗАЦИЯ",
@@ -149,6 +195,20 @@ export function ScenarioFilters({
           Сбросить
         </Link>
       </div>
+      {Object.entries(errors)
+        .filter(
+          ([key]) => key.startsWith("maturity") || key.startsWith("readiness"),
+        )
+        .map(([key, message]) => (
+          <small
+            className="filter-error"
+            key={key}
+            id={`error-${key}`}
+            role="alert"
+          >
+            {message}
+          </small>
+        ))}
       <details
         className="advanced-filters"
         open={Object.keys(errors).length > 0 ? true : undefined}
@@ -160,29 +220,24 @@ export function ScenarioFilters({
           </span>
         </summary>
         <div className="advanced-grid">
-          {field(
-            "businessNodeId",
-            "Бизнес-процесс / этап",
-            references.business.map((n) => ({
-              ...n,
-              name: `${n.kind === "direction" ? "Направление" : n.kind === "process" ? "Процесс" : "Этап"} · ${n.name}`,
-            })),
-            "Все процессы",
-          )}
-
+          <label>
+            <span>Бизнес-процесс / этап</span>
+            <select disabled aria-label="Бизнес-процесс / этап">
+              <option>Справочник не согласован</option>
+            </select>
+          </label>
           {field(
             "functionalGroupId",
             "Функциональная группа",
             references.groups,
           )}
-          {field("readiness", "ОГ: точное значение", options(7))}
           {field("impact", "Влияние: точное значение", options(3))}
-          {(["maturity", "readiness", "impact"] as const).flatMap((prefix, i) =>
+          {(["impact"] as const).flatMap((prefix, i) =>
             (["Min", "Max"] as const).map((bound) =>
               field(
                 `${prefix}${bound}`,
-                `${["РЗ", "ОГ", "Влияние"][i]} ${bound === "Min" ? "от" : "до"}`,
-                options([5, 7, 3][i]),
+                `${["Влияние"][i]} ${bound === "Min" ? "от" : "до"}`,
+                options([3][i]),
                 "Не ограничено",
               ),
             ),

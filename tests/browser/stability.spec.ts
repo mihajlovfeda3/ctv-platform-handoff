@@ -91,11 +91,7 @@ test("all exact scores clear ranges, invalid bounds stay inline, deep links rema
 }) => {
   await page.goto("/scenarios/catalog");
   await page.locator(".advanced-filters summary").click();
-  for (const [prefix, , value, max] of [
-    ["readiness", "ОГ", "7", "4"],
-    ["maturity", "РЗ", "5", "3"],
-    ["impact", "Влияние", "3", "2"],
-  ]) {
+  for (const [prefix, , value, max] of [["impact", "Влияние", "3", "2"]]) {
     await page.locator(`[name=${prefix}Max]`).selectOption(max);
     await expect(page).toHaveURL(new RegExp(`${prefix}Max=${max}`));
     await settled(page);
@@ -105,21 +101,6 @@ test("all exact scores clear ranges, invalid bounds stay inline, deep links rema
     expect(new URL(page.url()).searchParams.has(`${prefix}Max`)).toBe(false);
     await expect(page.locator(`[name=${prefix}Max]`)).toHaveValue("");
   }
-  await page.locator("[name=readinessMin]").selectOption("6");
-  await settled(page);
-  await page.locator("[name=readinessMax]").selectOption("4");
-  await expect(page.locator("#error-readinessMax")).toBeVisible();
-  if (process.env.SAVE_UX_SCREENSHOTS && page.viewportSize()?.width === 1440)
-    await page.screenshot({
-      path: "docs/screenshots/2a1/filter-conflict-1440.jpg",
-      fullPage: true,
-    });
-  await expect(
-    page.getByRole("heading", { name: "Каталог сценариев", exact: true }),
-  ).toBeVisible();
-  await page.locator("[name=readinessMax]").selectOption("7");
-  await settled(page);
-  await expect(page.locator("#error-readinessMax")).toHaveCount(0);
   await page.goto("/scenarios/catalog?readinessMin=6&readinessMax=4");
   await expect(page.locator("#error-readinessMax")).toBeVisible();
   await expect(

@@ -20,47 +20,7 @@ export async function listScenarios(
   db: Database = getDatabase(),
 ) {
   const q = scenarioQuery.parse(raw);
-  const conditions = [];
-  if (q.q) {
-    const escaped = q.q.replace(/[\\%_]/g, "\\$&");
-    conditions.push(
-      or(
-        ilike(s.scenarios.name, `%${escaped}%`),
-        ilike(s.scenarios.description, `%${escaped}%`),
-        ilike(s.scenarios.externalId, `%${escaped}%`),
-      ),
-    );
-  }
-  if (q.businessNodeId)
-    conditions.push(
-      sql`${s.scenarios.businessNodeId} in (with recursive subtree as (select id from ${s.businessNodes} where id=${q.businessNodeId} union select b.id from ${s.businessNodes} b join subtree p on b.parent_id=p.id) select id from subtree)`,
-    );
-  for (const [value, column] of [
-    [q.blockId, s.scenarioClassification.blockId],
-    [q.businessDirectionId, s.scenarioClassification.businessDirectionId],
-  ] as const)
-    if (value)
-      conditions.push(
-        sql`exists (select 1 from ${s.scenarioClassification} where ${s.scenarioClassification.scenarioId}=${s.scenarios.id} and ${column}=${value})`,
-      );
-  if (q.functionalGroupId)
-    conditions.push(eq(s.scenarios.functionalGroupId, q.functionalGroupId));
-  if (q.implementation)
-    conditions.push(eq(s.scenarios.implementation, q.implementation));
-  if (q.directionId)
-    conditions.push(
-      sql`exists (select 1 from ${s.scenarioTechnologies} st join ${s.technologyMethods} tm on tm.id=st.method_id join ${s.keyTechnologies} kt on kt.id=tm.technology_id where st.scenario_id=${s.scenarios.id} and kt.direction_id=${q.directionId})`,
-    );
-  for (const [metric, value, min, max] of [
-    ["market_maturity", q.maturity, q.maturityMin, q.maturityMax],
-    ["organizational_readiness", q.readiness, q.readinessMin, q.readinessMax],
-    ["business_impact", q.impact, q.impactMin, q.impactMax],
-  ] as const) {
-    if (value !== undefined || min !== undefined || max !== undefined)
-      conditions.push(
-        sql`exists (select 1 from ${s.assessments} a where a.scenario_id=${s.scenarios.id} and a.metric=${metric} and a.is_current=true and a.organizational_context=${q.context} and ${value === undefined ? sql`true` : sql`a.value=${value}`} and ${min === undefined ? sql`true` : sql`a.value>=${min}`} and ${max === undefined ? sql`true` : sql`a.value<=${max}`})`,
-      );
-  }
+  const conditions = scenarioConditions(q);
   const sortMetric = {
     maturity: "market_maturity",
     readiness: "organizational_readiness",
@@ -298,3 +258,48 @@ export async function getReferences(db: Database = getDatabase()) {
   };
 }
 export type ScenarioList = Awaited<ReturnType<typeof listScenarios>>;
+
+export function scenarioConditions(q: ReturnType<typeof scenarioQuery.parse>) {
+  const conditions = [];
+  if (q.q) {
+    const escaped = q.q.replace(/[\\%_]/g, "\\$&");
+    conditions.push(
+      or(
+        ilike(s.scenarios.name, `%${escaped}%`),
+        ilike(s.scenarios.description, `%${escaped}%`),
+        ilike(s.scenarios.externalId, `%${escaped}%`),
+      ),
+    );
+  }
+  if (q.businessNodeId)
+    conditions.push(
+      sql`${s.scenarios.businessNodeId} in (with recursive subtree as (select id from ${s.businessNodes} where id=${q.businessNodeId} union select b.id from ${s.businessNodes} b join subtree p on b.parent_id=p.id) select id from subtree)`,
+    );
+  for (const [value, column] of [
+    [q.blockId, s.scenarioClassification.blockId],
+    [q.businessDirectionId, s.scenarioClassification.businessDirectionId],
+  ] as const)
+    if (value)
+      conditions.push(
+        sql`exists (select 1 from ${s.scenarioClassification} where ${s.scenarioClassification.scenarioId}=${s.scenarios.id} and ${column}=${value})`,
+      );
+  if (q.functionalGroupId)
+    conditions.push(eq(s.scenarios.functionalGroupId, q.functionalGroupId));
+  if (q.implementation)
+    conditions.push(eq(s.scenarios.implementation, q.implementation));
+  if (q.directionId)
+    conditions.push(
+      sql`exists (select 1 from ${s.scenarioTechnologies} st join ${s.technologyMethods} tm on tm.id=st.method_id join ${s.keyTechnologies} kt on kt.id=tm.technology_id where st.scenario_id=${s.scenarios.id} and kt.direction_id=${q.directionId})`,
+    );
+  for (const [metric, value, min, max] of [
+    ["market_maturity", q.maturity, q.maturityMin, q.maturityMax],
+    ["organizational_readiness", q.readiness, q.readinessMin, q.readinessMax],
+    ["business_impact", q.impact, q.impactMin, q.impactMax],
+  ] as const) {
+    if (value !== undefined || min !== undefined || max !== undefined)
+      conditions.push(
+        sql`exists (select 1 from ${s.assessments} a where a.scenario_id=${s.scenarios.id} and a.metric=${metric} and a.is_current=true and a.organizational_context=${q.context} and ${value === undefined ? sql`true` : sql`a.value=${value}`} and ${min === undefined ? sql`true` : sql`a.value>=${min}`} and ${max === undefined ? sql`true` : sql`a.value<=${max}`})`,
+      );
+  }
+  return conditions;
+}

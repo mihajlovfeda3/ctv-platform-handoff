@@ -1,11 +1,13 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/browser",
+  outputDir: process.env.PERF_SIZE ? "test-results-large" : "test-results",
   fullyParallel: false,
   workers: 1,
   timeout: 45000,
+  expect: { timeout: 10000 },
   use: {
-    baseURL: "http://127.0.0.1:3002",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3002",
     headless: true,
     channel: process.platform === "win32" ? "chrome" : undefined,
     trace: "retain-on-failure",
@@ -16,8 +18,8 @@ export default defineConfig({
     { name: "768", use: { viewport: { width: 768, height: 900 } } },
   ],
   webServer: {
-    command: "npm start -- --port 3002",
-    url: "http://127.0.0.1:3002/overview",
+    command: `npm start -- --port ${new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3002").port}`,
+    url: `${process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3002"}/overview`,
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
   },
