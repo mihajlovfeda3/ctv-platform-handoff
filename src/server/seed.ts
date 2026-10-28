@@ -1,3 +1,4 @@
+import { seedDemoClassification } from "./demo-classification";
 import type { Database } from "@/db/client";
 import * as s from "@/db/schema";
 import { generateDataset } from "../../scripts/synthetic";
@@ -81,7 +82,9 @@ export async function seedDatabase(db: Database, size = 80, seed?: number) {
         .values(d.scenarioProjects)
         .onConflictDoNothing();
   });
+  const classification = await seedDemoClassification(db);
   return {
+    classification,
     scenarios: d.scenarios.length,
     seed: seed ?? 20261027,
     synthetic: true,

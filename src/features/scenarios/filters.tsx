@@ -109,19 +109,22 @@ export function ScenarioFilters({
           />
         </label>
         {field(
-          "directionId",
-          "ТЕХНОЛОГИЯ",
-          references.directions,
+          "blockId",
+          "БЛОК „ГАЗПРОМ НЕФТЬ“",
+          references.blocks,
+          "Все блоки",
+        )}
+        {field(
+          "businessDirectionId",
+          "БИЗНЕС-НАПРАВЛЕНИЕ",
+          references.businessDirections,
           "Все направления",
         )}
         {field(
-          "businessNodeId",
-          "БИЗНЕС",
-          references.business.map((node) => ({
-            ...node,
-            name: `${({ direction: "Направление", process: "Процесс", stage: "Этап" } as Record<string, string>)[node.kind]} · ${node.name}`,
-          })),
-          "Все уровни",
+          "directionId",
+          "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
+          references.directions,
+          "Все направления",
         )}
         {field("maturity", "РЫНОЧНАЯ ЗРЕЛОСТЬ", options(5), "Любая зрелость")}
         {field(
@@ -146,9 +149,6 @@ export function ScenarioFilters({
           Сбросить
         </Link>
       </div>
-      <p className="filter-origin">
-        Учебный бизнес-ландшафт · направление → процесс → этап
-      </p>
       <details
         className="advanced-filters"
         open={Object.keys(errors).length > 0 ? true : undefined}
@@ -160,6 +160,16 @@ export function ScenarioFilters({
           </span>
         </summary>
         <div className="advanced-grid">
+          {field(
+            "businessNodeId",
+            "Бизнес-процесс / этап",
+            references.business.map((n) => ({
+              ...n,
+              name: `${n.kind === "direction" ? "Направление" : n.kind === "process" ? "Процесс" : "Этап"} · ${n.name}`,
+            })),
+            "Все процессы",
+          )}
+
           {field(
             "functionalGroupId",
             "Функциональная группа",

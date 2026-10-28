@@ -89,7 +89,84 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     expect(
       (await db.select({ total: count() }).from(s.scenarioTechnologies))[0]
         .total,
-    ).toBe(100);
+    ).toBe(80);
+  });
+  it("разделяет классификаторы и совместно фильтрует блок, бизнес и технологию", async () => {
+    const refs = await getReferences(db);
+    expect(refs.directions).toHaveLength(8);
+    expect(refs.businessDirections.map((x) => x.name)).toContain(
+      "Управление имуществом",
+    );
+    expect(refs.blocks).toHaveLength(0);
+    const blockId = stableId("test-only-block");
+    await db
+      .insert(s.organizationalBlocks)
+      .values({
+        id: blockId,
+        name: "Тестовый блок (только автоматический тест)",
+        isSynthetic: true,
+      });
+    const [link] = await db.select().from(s.scenarioClassification).limit(1);
+    await db
+      .update(s.scenarioClassification)
+      .set({ blockId })
+      .where(eq(s.scenarioClassification.scenarioId, link.scenarioId));
+    const tech = (await relatedObjects(link.scenarioId, db)).technologies[0]
+      .direction;
+    const directionId = refs.directions.find((d) => d.name === tech)!.id;
+    const result = await listScenarios(
+      { blockId, businessDirectionId: link.businessDirectionId, directionId },
+      db,
+    );
+    expect(result.items.map((x) => x.id)).toEqual([link.scenarioId]);
+    expect(
+      (
+        await listScenarios(
+          {
+            blockId,
+            businessDirectionId: refs.businessDirections.find(
+              (d) => d.id !== link.businessDirectionId,
+            )!.id,
+          },
+          db,
+        )
+      ).total,
+    ).toBe(0);
+    await db
+      .update(s.scenarioClassification)
+      .set({ blockId: null })
+      .where(eq(s.scenarioClassification.scenarioId, link.scenarioId));
+    await db
+      .delete(s.organizationalBlocks)
+      .where(eq(s.organizationalBlocks.id, blockId));
+  });
+  it("повторный seed сохраняет несинтетические записи и их связи", async () => {
+    const id = stableId("real-preservation-test");
+    await createScenario(
+      {
+        id,
+        name: "Проверка защиты",
+        description: "Только автоматический тест",
+        externalId: "SAFE",
+        originNamespace: "test-real",
+        isSynthetic: false,
+      },
+      db,
+    );
+    await db
+      .insert(s.scenarioClassification)
+      .values({ scenarioId: id, isSynthetic: false });
+    await seedDatabase(db, 80);
+    expect((await getScenario(id, db))?.scenario.isSynthetic).toBe(false);
+    expect(
+      (
+        await db
+          .select()
+          .from(s.scenarioClassification)
+          .where(eq(s.scenarioClassification.scenarioId, id))
+      )[0].isSynthetic,
+    ).toBe(false);
+    await db.delete(s.scenarios).where(eq(s.scenarios.id, id));
   });
   it("создаёт сценарий и читает соответствующий ID", async () => {
     const scenario = await createScenario(

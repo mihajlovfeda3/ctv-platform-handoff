@@ -35,6 +35,14 @@ export async function listScenarios(
     conditions.push(
       sql`${s.scenarios.businessNodeId} in (with recursive subtree as (select id from ${s.businessNodes} where id=${q.businessNodeId} union select b.id from ${s.businessNodes} b join subtree p on b.parent_id=p.id) select id from subtree)`,
     );
+  for (const [value, column] of [
+    [q.blockId, s.scenarioClassification.blockId],
+    [q.businessDirectionId, s.scenarioClassification.businessDirectionId],
+  ] as const)
+    if (value)
+      conditions.push(
+        sql`exists (select 1 from ${s.scenarioClassification} where ${s.scenarioClassification.scenarioId}=${s.scenarios.id} and ${column}=${value})`,
+      );
   if (q.functionalGroupId)
     conditions.push(eq(s.scenarios.functionalGroupId, q.functionalGroupId));
   if (q.implementation)
@@ -228,17 +236,43 @@ export async function relatedObjects(id: string, db: Database = getDatabase()) {
   return { technologies, tasks, effects, cases, solutions, projects };
 }
 export async function getReferences(db: Database = getDatabase()) {
-  const [directions, technologies, methods, business, groups] =
-    await Promise.all([
-      db
-        .select()
-        .from(s.technologyDirections)
-        .orderBy(s.technologyDirections.name),
-      db.select().from(s.keyTechnologies).orderBy(s.keyTechnologies.name),
-      db.select().from(s.technologyMethods).orderBy(s.technologyMethods.name),
-      db.select().from(s.businessNodes).orderBy(s.businessNodes.name),
-      db.select().from(s.functionalGroups).orderBy(s.functionalGroups.name),
-    ]);
-  return { directions, technologies, methods, business, groups };
+  const [
+    directions,
+    technologies,
+    methods,
+    business,
+    groups,
+    blocks,
+    businessDirections,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(s.technologyDirections)
+      .where(
+        or(
+          eq(s.technologyDirections.isSynthetic, false),
+          eq(s.technologyDirections.description, "ctv-demo-classification-v2"),
+        ),
+      )
+      .orderBy(s.technologyDirections.name),
+    db.select().from(s.keyTechnologies).orderBy(s.keyTechnologies.name),
+    db.select().from(s.technologyMethods).orderBy(s.technologyMethods.name),
+    db.select().from(s.businessNodes).orderBy(s.businessNodes.name),
+    db.select().from(s.functionalGroups).orderBy(s.functionalGroups.name),
+    db
+      .select()
+      .from(s.organizationalBlocks)
+      .orderBy(s.organizationalBlocks.name),
+    db.select().from(s.businessDirections).orderBy(s.businessDirections.name),
+  ]);
+  return {
+    directions,
+    technologies,
+    methods,
+    business,
+    groups,
+    blocks,
+    businessDirections,
+  };
 }
 export type ScenarioList = Awaited<ReturnType<typeof listScenarios>>;

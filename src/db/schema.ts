@@ -284,3 +284,21 @@ export const importRows = pgTable(
   },
   (t) => [primaryKey({ columns: [t.batchId, t.rowNumber] })],
 );
+
+// Organizational structure is independent of the business landscape.
+export const organizationalBlocks = pgTable("organizational_blocks", {
+  ...metadata(),
+});
+export const businessDirections = pgTable("business_directions", {
+  ...metadata(),
+});
+export const scenarioClassification = pgTable("scenario_classification", {
+  scenarioId: uuid("scenario_id")
+    .primaryKey()
+    .references(() => scenarios.id, { onDelete: "cascade" }),
+  blockId: uuid("block_id").references(() => organizationalBlocks.id),
+  businessDirectionId: uuid("business_direction_id").references(
+    () => businessDirections.id,
+  ),
+  ...linkMeta(),
+});

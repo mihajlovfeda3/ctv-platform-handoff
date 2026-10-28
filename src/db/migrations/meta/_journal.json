@@ -15,6 +15,13 @@
       "when": 1793115364079,
       "tag": "0001_business_hierarchy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793195127372,
+      "tag": "0002_windy_kat_farrell",
+      "breakpoints": true
     }
   ]
 }
