@@ -13,7 +13,7 @@ npm ci
 Copy-Item .env.example .env
 # Установите свой POSTGRES_PASSWORD и тот же пароль в DATABASE_URL в .env.
 docker compose up -d --wait
-npm run db:migrate
+  npm run db:migrate
 npm run db:seed
 npm run dev
 ```
