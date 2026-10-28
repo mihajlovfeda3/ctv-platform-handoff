@@ -1,22 +1,39 @@
 "use client";
-import { useOptimistic, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { ScenarioQuery } from "@/domain/scenario";
+import {
+  editFilter,
+  filterDraft,
+  filterErrors,
+  type FilterDraft,
+} from "./filter-state";
+import { scenarioQuery, type ScenarioQuery } from "@/domain/scenario";
 import type { getReferences } from "@/server/scenarios";
 import { workspaceHref, type ScenarioView } from "./navigation";
 export function ScenarioFilters({
   query,
   references,
   view,
+  invalidDraft,
 }: {
   query: ScenarioQuery;
   references: Awaited<ReturnType<typeof getReferences>>;
   view: ScenarioView;
+  invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [search, setSearch] = useOptimistic(query.q);
+  const queryKey = JSON.stringify([query, invalidDraft]);
+  const [previousKey, setPreviousKey] = useState(queryKey);
+  const [draft, setDraft] = useState<FilterDraft>(
+    () => invalidDraft ?? filterDraft(query),
+  );
+  if (previousKey !== queryKey) {
+    setPreviousKey(queryKey);
+    setDraft(invalidDraft ?? filterDraft(query));
+  }
+  const errors = filterErrors(draft);
   const options = (max: number) =>
     Array.from({ length: max }, (_, i) => ({
       id: String(i + 1),
@@ -30,7 +47,13 @@ export function ScenarioFilters({
   ) => (
     <label key={key}>
       <span>{label}</span>
-      <select name={key} value={String(query[key] ?? "")} onChange={() => {}}>
+      <select
+        name={key}
+        value={draft[key] ?? ""}
+        onChange={() => {}}
+        aria-invalid={!!errors[key]}
+        aria-describedby={errors[key] ? `error-${key}` : undefined}
+      >
         <option value="">{empty}</option>
         {items.map((o) => (
           <option key={o.id} value={o.id}>
@@ -38,33 +61,39 @@ export function ScenarioFilters({
           </option>
         ))}
       </select>
+      {errors[key] && (
+        <small className="filter-error" id={`error-${key}`} role="alert">
+          {errors[key]}
+        </small>
+      )}
     </label>
   );
-  function apply(form: HTMLFormElement, target?: HTMLInputElement) {
+  function apply(target: HTMLInputElement | HTMLSelectElement) {
+    const next = editFilter(draft, target.name, target.value);
+    setDraft(next);
+    if (Object.keys(filterErrors(next)).length) return;
     const patch: Record<string, string | undefined> = { page: undefined };
-    for (const [key, value] of new FormData(form))
-      patch[key] = String(value) || undefined;
-    if (target?.name.endsWith("Min") || target?.name.endsWith("Max"))
-      patch[target.name.replace(/Min|Max/, "")] = undefined;
-    if (target?.name === "maturity") {
-      patch.maturityMin = undefined;
-      patch.maturityMax = undefined;
-    }
-    startTransition(() => {
-      if (target?.name === "q") setSearch(target.value);
-      router.replace(workspaceHref(view, query, patch), { scroll: false });
-    });
+    for (const [key, value] of Object.entries(next))
+      patch[key] = value || undefined;
+    startTransition(() =>
+      router.replace(workspaceHref(view, query, patch), { scroll: false }),
+    );
   }
   return (
     <form
       className="surface shared-filters"
       onSubmit={(e) => {
         e.preventDefault();
-        apply(e.currentTarget);
+        const result = scenarioQuery.safeParse(draft);
+        if (result.success)
+          startTransition(() =>
+            router.replace(
+              workspaceHref(view, result.data, { page: undefined }),
+              { scroll: false },
+            ),
+          );
       }}
-      onChange={(e) =>
-        apply(e.currentTarget, e.target as unknown as HTMLInputElement)
-      }
+      onChange={(e) => apply(e.target as unknown as HTMLInputElement)}
       aria-label="Общие фильтры сценариев"
       aria-busy={pending}
     >
@@ -73,7 +102,7 @@ export function ScenarioFilters({
           <span>ПОИСК</span>
           <input
             name="q"
-            value={search}
+            value={draft.q ?? ""}
             onChange={() => {}}
             maxLength={200}
             placeholder="Название, описание или ID"
@@ -85,7 +114,15 @@ export function ScenarioFilters({
           references.directions,
           "Все направления",
         )}
-        {field("businessNodeId", "БИЗНЕС", references.business, "Все процессы")}
+        {field(
+          "businessNodeId",
+          "БИЗНЕС",
+          references.business.map((node) => ({
+            ...node,
+            name: `${({ direction: "Направление", process: "Процесс", stage: "Этап" } as Record<string, string>)[node.kind]} · ${node.name}`,
+          })),
+          "Все уровни",
+        )}
         {field("maturity", "РЫНОЧНАЯ ЗРЕЛОСТЬ", options(5), "Любая зрелость")}
         {field(
           "implementation",
@@ -98,6 +135,8 @@ export function ScenarioFilters({
           "Любой статус",
         )}
         <Link
+          replace
+          scroll={false}
           className="button"
           href={workspaceHref(view, {
             context: query.context,
@@ -107,7 +146,13 @@ export function ScenarioFilters({
           Сбросить
         </Link>
       </div>
-      <details className="advanced-filters">
+      <p className="filter-origin">
+        Учебный бизнес-ландшафт · направление → процесс → этап
+      </p>
+      <details
+        className="advanced-filters"
+        open={Object.keys(errors).length > 0 ? true : undefined}
+      >
         <summary>
           Дополнительные параметры{" "}
           <span>
@@ -136,7 +181,8 @@ export function ScenarioFilters({
             <span>Организационный контекст</span>
             <input
               name="context"
-              defaultValue={query.context}
+              value={draft.context ?? ""}
+              onChange={() => {}}
               required
               maxLength={160}
             />

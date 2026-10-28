@@ -42,7 +42,11 @@ export default async function ScenarioDetail({
     new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow" }).format(d);
   return (
     <div className="page detail-page revised-card">
-      <Link className="back-link" href={workspaceHref(query.from, query)}>
+      <Link
+        scroll={false}
+        className="back-link"
+        href={workspaceHref(query.from, query)}
+      >
         ← Вернуться к выборке
       </Link>
       <header className="detail-header">

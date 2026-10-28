@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { CardLink } from "./scroll-context";
 import { useRouter } from "next/navigation";
 import type { getScenario, relatedObjects } from "@/server/scenarios";
 import { Metrics } from "./metrics";
@@ -22,14 +23,14 @@ export function Inspector({
     close = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    close.current?.focus();
+    close.current?.focus({ preventScroll: true });
     const listener = (event: KeyboardEvent) => {
-      if (event.key === "Escape") router.push(closeHref, { scroll: false });
+      if (event.key === "Escape") router.replace(closeHref, { scroll: false });
     };
     document.addEventListener("keydown", listener);
     return () => {
       document.removeEventListener("keydown", listener);
-      previous?.focus();
+      previous?.focus({ preventScroll: true });
     };
   }, [router, closeHref]);
   return (
@@ -41,6 +42,7 @@ export function Inspector({
       <div className="inspector-top">
         <span>БЫСТРЫЙ ПРОСМОТР</span>
         <Link
+          replace
           ref={close}
           href={closeHref}
           scroll={false}
@@ -75,9 +77,13 @@ export function Inspector({
         {related.cases.length} кейсов · {related.solutions.length} решений ·{" "}
         {related.projects.length} проектов
       </p>
-      <Link className="button primary" href={fullHref}>
+      <CardLink
+        className="button primary"
+        href={fullHref}
+        returnHref={closeHref + `&selected=${item.scenario.id}`}
+      >
         Открыть полную карточку →
-      </Link>
+      </CardLink>
     </aside>
   );
 }

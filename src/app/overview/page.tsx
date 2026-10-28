@@ -70,7 +70,7 @@ export default function Overview() {
             Исследуйте сценарии, изучайте связи и готовьте основу для следующего
             технологического шага.
           </p>
-          <Link href="/scenarios" className="button hero-button">
+          <Link href="/scenarios/catalog" className="button hero-button">
             Открыть каталог сценариев <ArrowUpRight size={17} />
           </Link>
         </div>

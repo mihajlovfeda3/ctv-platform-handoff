@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CardLink } from "./scroll-context";
 import { workspaceHref, cardHref } from "./navigation";
 import { ArrowUpRight, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import type { ScenarioList } from "@/server/scenarios";
@@ -27,6 +28,8 @@ export function ScenarioCatalog({
         <div className="catalog-sort">
           {["id", "name", "maturity", "readiness", "impact"].map((key, i) => (
             <Link
+              replace
+              scroll={false}
               key={key}
               href={workspaceHref("catalog", query, {
                 sort: key,
@@ -88,6 +91,7 @@ export function ScenarioCatalog({
                         )}
                       </div>
                       <Link
+                        scroll={false}
                         className="record-title"
                         href={workspaceHref("catalog", query, {
                           selected: item.id,
@@ -138,13 +142,16 @@ export function ScenarioCatalog({
                       </span>
                     </td>
                     <td>
-                      <Link
+                      <CardLink
+                        returnHref={workspaceHref("catalog", query, {
+                          selected: item.id,
+                        })}
                         href={cardHref(item.id, "catalog", query)}
                         className="row-open"
                         aria-label={`Открыть ${item.externalId}`}
                       >
                         <ArrowUpRight size={18} />
-                      </Link>
+                      </CardLink>
                     </td>
                   </tr>
                 );

@@ -17,6 +17,22 @@ jobs:
     name: Lint, typecheck, tests, build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ctv
+          POSTGRES_PASSWORD: ctv_ci_synthetic
+          POSTGRES_DB: ctv_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ctv -d ctv_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ctv:ctv_ci_synthetic@127.0.0.1:5432/ctv_test
 
     steps:
       - name: Check out repository
@@ -42,3 +58,12 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Prepare synthetic browser test database
+        run: npm run db:migrate && npm run db:seed
+
+      - name: Install Chromium for browser regression
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser UX regression (three viewports)
+        run: npm run test:e2e

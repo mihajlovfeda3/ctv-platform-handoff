@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { scenarioQuery } from "@/domain/scenario";
+import { RestoreWorkspaceScroll } from "./scroll-context";
+import { workspaceQuery } from "./filter-state";
 import {
   getReferences,
   listScenarios,
@@ -23,8 +24,8 @@ export async function Workspace({
   view: ScenarioView;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const parsed = scenarioQuery.safeParse(await searchParams);
-  if (!parsed.success)
+  const parsed = workspaceQuery(await searchParams);
+  if (!parsed)
     return (
       <div className="page surface empty-state">
         <h1>Некорректные параметры фильтра</h1>
@@ -34,7 +35,7 @@ export async function Workspace({
         </Link>
       </div>
     );
-  const query = parsed.data;
+  const query = parsed.query;
   const [result, references, item] = await Promise.all([
     listScenarios(query),
     getReferences(),
@@ -43,6 +44,7 @@ export async function Workspace({
   const related = item ? await relatedObjects(item.scenario.id) : null;
   return (
     <div className="page scenarios-page">
+      <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
         <div>
           <div className="eyebrow">ЦИФРОВОЕ ТЕХНОЛОГИЧЕСКОЕ ВИДЕНИЕ</div>
@@ -65,7 +67,12 @@ export async function Workspace({
           </Link>
         ))}
       </nav>
-      <ScenarioFilters query={query} references={references} view={view} />
+      <ScenarioFilters
+        query={query}
+        references={references}
+        view={view}
+        invalidDraft={parsed.invalidDraft}
+      />
       <div className="scenario-workspace">
         {view === "catalog" ? (
           <ScenarioCatalog result={result} query={query} />
@@ -88,6 +95,8 @@ export async function Workspace({
                   >
                     {(["groups", "points"] as const).map((mode) => (
                       <Link
+                        replace
+                        scroll={false}
                         key={mode}
                         href={workspaceHref(view, query, { mode })}
                         aria-current={query.mode === mode ? "true" : undefined}
