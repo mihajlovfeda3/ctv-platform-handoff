@@ -69,6 +69,6 @@ jobs:
         run: npm run test:e2e
 
       - name: Browser regression on 2500 synthetic scenarios
-        run: npm run db:seed -- 2500 && npx playwright test tests/browser/analytics.spec.ts
+        run: npm run db:seed -- 2500 && npx playwright test tests/browser/analytics.spec.ts tests/browser/viewport.spec.ts
         env:
           PERF_SIZE: "2500"

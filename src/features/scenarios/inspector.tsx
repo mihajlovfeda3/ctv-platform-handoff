@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
-import { useRouter } from "next/navigation";
 import type { getScenario, relatedObjects } from "@/server/scenarios";
 import { Metrics } from "./metrics";
 import { implementationLabels } from "@/domain/scenario";
@@ -19,20 +18,14 @@ export function Inspector({
   fullHref: string;
   context: string;
 }) {
-  const router = useRouter(),
-    close = useRef<HTMLAnchorElement>(null);
+  const close = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     close.current?.focus({ preventScroll: true });
-    const listener = (event: KeyboardEvent) => {
-      if (event.key === "Escape") router.replace(closeHref, { scroll: false });
-    };
-    document.addEventListener("keydown", listener);
     return () => {
-      document.removeEventListener("keydown", listener);
       previous?.focus({ preventScroll: true });
     };
-  }, [router, closeHref]);
+  }, [closeHref]);
   return (
     <aside
       className="scenario-inspector"

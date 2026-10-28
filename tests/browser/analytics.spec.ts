@@ -89,8 +89,15 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   else await page.locator("circle[data-scenario]").first().click();
   await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
+  await expect(page).toHaveURL(/\/scenarios\/radar\?/);
   await expect(page).toHaveURL(/selected=/);
+  await expect(
+    page.getByRole("region", { name: "Быстрый просмотр сценария" }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("region", { name: "Быстрый просмотр сценария" }),
+  ).toHaveCount(0);
   await page.locator("[name=maturityMin]").focus();
   await page.keyboard.press("ArrowRight");
   await page.keyboard.up("ArrowRight");
@@ -100,12 +107,13 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
     .locator("#scenario-subnav")
     .getByRole("link", { name: "Матрица зрелости" })
     .click();
-  await expect(page.locator(".maturity-matrix")).toBeVisible();
+  await expect(page.locator(".matrix-scatter")).toBeVisible();
   await expect(page).toHaveURL(/maturityMin=2/);
   await page
-    .locator(".maturity-matrix button")
+    .locator(".scatter-cell")
     .filter({ hasText: /^[1-9]/ })
     .first()
+    .locator(".cell-count")
     .click();
   await expect(page.getByLabel("Состав выбранной группы")).toBeVisible();
   await page.locator(".group-members a").first().click();
@@ -123,7 +131,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name === "1440") {
     await page.keyboard.press("Escape");
     await page.goto("/scenarios/maturity?q=SYN-");
-    await expect(page.locator(".maturity-matrix")).toBeVisible();
+    await expect(page.locator(".matrix-scatter")).toBeVisible();
     await page.screenshot({
       path: "docs/screenshots/2b/maturity.jpg",
       fullPage: true,

@@ -1,7 +1,10 @@
 "use client";
-import Link from "next/link";
+import { ContextLink as Link } from "./camera-context";
+import { useRadarCamera } from "./use-radar-camera";
+import { radarRadius, visibleSectors } from "@/domain/camera";
+import { MatrixScatter } from "./matrix-scatter";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   matrixCells,
   radarGroups,
@@ -36,74 +39,10 @@ export function AnalyticsView({
     },
     [router, view, query],
   );
-  const [camera, setCamera] = useState({
-    z: query.zoom,
-    x: query.panX,
-    y: query.panY,
-  });
-  const cameraKey = `${query.zoom}:${query.panX}:${query.panY}`;
-  const [previousCamera, setPreviousCamera] = useState(cameraKey);
-  if (previousCamera !== cameraKey) {
-    setPreviousCamera(cameraKey);
-    setCamera({ z: query.zoom, x: query.panX, y: query.panY });
-  }
-  const svg = useRef<SVGSVGElement>(null),
-    drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
-      null,
-    ),
-    moved = useRef(false),
-    wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (wheelTimer.current) clearTimeout(wheelTimer.current);
-    },
-    [view],
-  );
-  const saveCamera = (c: typeof camera) =>
-    navigate({ zoom: c.z, panX: c.x, panY: c.y });
-  useEffect(() => {
-    const node = svg.current;
-    if (!node) return;
-    const stop = (e: WheelEvent) => e.preventDefault();
-    node.addEventListener("wheel", stop, { passive: false });
-    return () => node.removeEventListener("wheel", stop);
-  }, [view]);
-  useEffect(() => {
-    const close = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        !query.selected &&
-        (query.cluster || query.cell)
-      )
-        navigate({ cluster: undefined, cell: undefined });
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  });
-  const clientPoint = (x: number, y: number) => {
-    const r = svg.current!.getBoundingClientRect();
-    const scale = Math.min(r.width / 680, r.height / 580);
-    return {
-      x: (x - r.left - (r.width - 680 * scale) / 2) / scale,
-      y: (y - r.top - (r.height - 580 * scale) / 2) / scale,
-    };
-  };
-  const zoom = (factor: number, anchor = { x: 340, y: 290 }) => {
-    const z = Math.max(1, Math.min(8, camera.z * factor));
-    const next = {
-      z,
-      x: Math.max(
-        -4000,
-        Math.min(4000, anchor.x - ((anchor.x - camera.x) * z) / camera.z),
-      ),
-      y: Math.max(
-        -4000,
-        Math.min(4000, anchor.y - ((anchor.y - camera.y) * z) / camera.z),
-      ),
-    };
-    setCamera(next);
-    return next;
-  };
+  const controls = useRadarCamera(view);
+  const { camera, viewport, svg, moved } = controls;
+  const visible = visibleSectors(camera, viewport, data.directions.length);
+  const baseScale = radarRadius(viewport) / 220;
   const groups = useMemo(() => radarGroups(data.rows), [data.rows]);
   const cells = useMemo(() => matrixCells(data.rows), [data.rows]);
   const unknown = data.rows.filter(
@@ -116,8 +55,6 @@ export function AnalyticsView({
       : query.cluster === "unknown"
         ? unknown
         : selectedGroup?.rows;
-  const labelParts = (name: string) =>
-    name.match(/.{1,23}(?:\s|$)|\S+/g)?.slice(0, 4) ?? [name];
   const markers = useMemo(
     () =>
       groups.flatMap((group) => {
@@ -237,152 +174,158 @@ export function AnalyticsView({
         });
         // Only camera attributes change during gestures; marker elements are memoized.
       }),
-    [data, groups, query.mode, query.selected, navigate],
+    [data, groups, query.mode, query.selected, navigate, moved],
   );
   return (
     <>
       {view === "radar" ? (
         <>
-          <div className="radar-tools" aria-label="Масштаб радара">
-            <button
-              onClick={() => saveCamera(zoom(1.25))}
-              aria-label="Приблизить"
-            >
-              +
-            </button>
-            <output>{camera.z.toFixed(1)}×</output>
-            <button onClick={() => saveCamera(zoom(0.8))} aria-label="Отдалить">
-              −
-            </button>
-            <button
-              onClick={() => {
-                setCamera({ z: 1, x: 0, y: 0 });
-                saveCamera({ z: 1, x: 0, y: 0 });
-              }}
-            >
-              Сброс масштаба
-            </button>
-          </div>
-          <svg
-            className="interactive-radar"
-            ref={svg}
-            viewBox="0 0 680 580"
-            aria-label="Интерактивный технологический радар"
-            onWheel={(e) => {
-              const c = zoom(
-                Math.exp(-e.deltaY * 0.002),
-                clientPoint(e.clientX, e.clientY),
-              );
-              if (wheelTimer.current) clearTimeout(wheelTimer.current);
-              wheelTimer.current = setTimeout(() => saveCamera(c), 200);
-            }}
-            onPointerDown={(e) => {
-              if ((e.target as Element).closest(".radar-mark")) return;
-              const p = clientPoint(e.clientX, e.clientY);
-              drag.current = { ...p, px: camera.x, py: camera.y };
-              moved.current = false;
-              e.currentTarget.setPointerCapture(e.pointerId);
-            }}
-            onPointerMove={(e) => {
-              if (!drag.current) return;
-              const p = clientPoint(e.clientX, e.clientY);
-              if (Math.hypot(p.x - drag.current.x, p.y - drag.current.y) > 3)
-                moved.current = true;
-              setCamera((c) => ({
-                ...c,
-                x: Math.max(
-                  -4000,
-                  Math.min(4000, drag.current!.px + p.x - drag.current!.x),
-                ),
-                y: Math.max(
-                  -4000,
-                  Math.min(4000, drag.current!.py + p.y - drag.current!.y),
-                ),
-              }));
-            }}
-            onPointerUp={() => {
-              if (drag.current) {
-                drag.current = null;
-                saveCamera(camera);
-                setTimeout(() => {
-                  moved.current = false;
-                }, 0);
-              }
-            }}
-            onPointerCancel={() => {
-              drag.current = null;
-              moved.current = false;
-            }}
-          >
-            <defs>
-              <radialGradient id="radar-blue">
-                <stop stopColor="#bbe5f5" />
-                <stop offset="1" stopColor="#e9f7fc" />
-              </radialGradient>
-              <clipPath id="radar-clip">
-                <rect width="680" height="580" />
-              </clipPath>
-            </defs>
-            <g clipPath="url(#radar-clip)">
-              <g
-                data-testid="camera"
-                transform={`translate(${camera.x} ${camera.y}) scale(${camera.z})`}
+          <div className="radar-viewport">
+            <div className="radar-tools" aria-label="Масштаб радара">
+              <button
+                onClick={() => controls.zoom(1.25)}
+                aria-label="Приблизить"
               >
-                <circle cx={340} cy={290} r={220} fill="url(#radar-blue)" />
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <g key={level}>
-                    <circle
-                      cx={340}
-                      cy={290}
-                      r={level * 44}
-                      fill="none"
-                      stroke="#c5deec"
-                    />
-                    <text
-                      x={340 + level * 44 - 10}
-                      y={286}
-                      fontSize="10"
-                      fill="#476982"
-                    >
-                      {level}
-                    </text>
-                  </g>
+                +
+              </button>
+              <output>{camera.z.toFixed(1)}×</output>
+              <select
+                aria-label="Установить масштаб"
+                value={[1, 3, 8].includes(camera.z) ? camera.z : "current"}
+                onChange={(e) =>
+                  controls.zoom(Number(e.target.value) / camera.z)
+                }
+              >
+                <option value="current" disabled>
+                  Текущий
+                </option>
+                {[1, 3, 8].map((z) => (
+                  <option key={z} value={z}>
+                    {z}×
+                  </option>
                 ))}
-                {data.directions.map((d, i) => {
-                  const a =
-                      (i * Math.PI * 2) / data.directions.length - Math.PI / 2,
-                    mid = a + Math.PI / data.directions.length;
-                  return (
-                    <g key={d.id}>
-                      <path
-                        d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220}`}
-                        stroke="white"
+              </select>
+              <button onClick={() => controls.zoom(0.8)} aria-label="Отдалить">
+                −
+              </button>
+              <button onClick={() => controls.save({ z: 1, x: 0, y: 0 })}>
+                Сброс масштаба
+              </button>
+            </div>
+            <svg
+              className="interactive-radar"
+              ref={svg}
+              viewBox={`0 0 ${viewport.width} ${viewport.height}`}
+              aria-label="Интерактивный технологический радар"
+              onPointerDown={controls.onPointerDown}
+              onPointerMove={controls.onPointerMove}
+              onPointerUp={controls.onPointerUp}
+              onPointerCancel={controls.onPointerCancel}
+            >
+              <defs>
+                <radialGradient id="radar-blue">
+                  <stop stopColor="#bbe5f5" />
+                  <stop offset="1" stopColor="#e9f7fc" />
+                </radialGradient>
+              </defs>
+              <g>
+                <g
+                  data-testid="camera"
+                  data-zoom={camera.z}
+                  data-pan-x={camera.x}
+                  data-pan-y={camera.y}
+                  data-radius={radarRadius(viewport) * camera.z}
+                  transform={`translate(${viewport.width / 2 + camera.x} ${viewport.height / 2 + camera.y}) scale(${baseScale * camera.z}) translate(-340 -290)`}
+                >
+                  <circle cx={340} cy={290} r={220} fill="url(#radar-blue)" />
+                  {[1, 2, 3, 4, 5].map((level) => (
+                    <g key={level}>
+                      <circle
+                        cx={340}
+                        cy={290}
+                        r={level * 44}
+                        fill="none"
+                        stroke="#c5deec"
                       />
                       <text
-                        x={340 + Math.cos(mid) * 268}
-                        y={290 + Math.sin(mid) * 255 - 12}
-                        textAnchor="middle"
-                        fontSize="9"
-                        fill="#46617d"
+                        x={340 + level * 44 - 10}
+                        y={286}
+                        fontSize="10"
+                        fill="#476982"
                       >
-                        <title>{d.name}</title>
-                        {labelParts(d.name).map((part, j) => (
-                          <tspan
-                            key={j}
-                            x={340 + Math.cos(mid) * 268}
-                            dy={j ? 11 : 0}
-                          >
-                            {part.trim()}
-                          </tspan>
-                        ))}
+                        {level}
                       </text>
                     </g>
-                  );
-                })}
-                {markers}
+                  ))}
+                  {data.directions.map((d, i) => {
+                    const a =
+                      (i * Math.PI * 2) / data.directions.length - Math.PI / 2;
+                    return (
+                      <g key={d.id}>
+                        <path
+                          d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220}`}
+                          stroke="white"
+                        />
+                      </g>
+                    );
+                  })}
+                  {markers}
+                </g>
               </g>
-            </g>
-          </svg>
+            </svg>
+            <div
+              className="direction-labels"
+              aria-label="Видимые технологические направления"
+            >
+              {["left", "right"].map((side) => (
+                <div
+                  className={`direction-rail ${side}`}
+                  key={side}
+                  style={
+                    side === "right" &&
+                    (query.selected || memberRows) &&
+                    viewport.width >= 900
+                      ? { right: 390 }
+                      : undefined
+                  }
+                >
+                  {visible
+                    .filter(
+                      (index) =>
+                        (viewport.width < 900 && (query.selected || memberRows)
+                          ? "left"
+                          : Math.cos(
+                                ((index + 0.5) * Math.PI * 2) /
+                                  data.directions.length -
+                                  Math.PI / 2,
+                              ) < 0
+                            ? "left"
+                            : "right") === side,
+                    )
+                    .sort(
+                      (a, b) =>
+                        Math.sin(
+                          ((a + 0.5) * Math.PI * 2) / data.directions.length -
+                            Math.PI / 2,
+                        ) -
+                        Math.sin(
+                          ((b + 0.5) * Math.PI * 2) / data.directions.length -
+                            Math.PI / 2,
+                        ),
+                    )
+                    .map((index) => (
+                      <div
+                        key={data.directions[index].id}
+                        className="direction-label"
+                        title={data.directions[index].name}
+                      >
+                        {data.directions[index].name}
+                      </div>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="analytics-legend">
             <span style={{ color: statusColors.yes }}>● Реализуется</span>
             <span style={{ color: statusColors.no }}>● Не реализуется</span>
@@ -411,52 +354,65 @@ export function AnalyticsView({
         </>
       ) : (
         <>
-          <div className="matrix-scroll">
-            <table className="maturity-matrix">
-              <caption>
-                Рыночная зрелость (строки) × организационная готовность
-                (столбцы)
-              </caption>
-              <thead>
-                <tr>
-                  <th>РЗ ↓ / ОГ →</th>
-                  {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                    <th key={n}>{n}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[5, 4, 3, 2, 1].map((level) => (
-                  <tr key={level}>
-                    <th>{level}</th>
-                    {[1, 2, 3, 4, 5, 6, 7].map((ready) => {
-                      const key = `${level}:${ready}`,
-                        rows = cells.get(key) ?? [];
-                      return (
-                        <td key={key}>
-                          <button
-                            aria-label={`РЗ ${level}, ОГ ${ready}: ${rows.length}`}
-                            aria-pressed={
-                              query.cell === key ||
-                              rows.some((r) => r.id === query.selected)
-                            }
-                            style={{
-                              background: `rgba(34,116,197,${Math.min(0.65, 0.04 + (rows.length / Math.max(1, data.total)) * 4)})`,
-                            }}
-                            onClick={() =>
-                              navigate({ cell: key, selected: undefined })
-                            }
-                          >
-                            {rows.length}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <MatrixScatter data={data} query={query} navigate={navigate} />
+          <div className="analytics-legend">
+            <span style={{ color: statusColors.yes }}>● Реализуется</span>
+            <span style={{ color: statusColors.no }}>● Не реализуется</span>
+            <span style={{ color: statusColors.unknown }}>
+              ● Статус неизвестен
+            </span>
+            <span>Размер — влияние 1–3; пунктир — неизвестно</span>
+            <span>Число в углу сочетания оценок — открыть состав</span>
           </div>
+          <details className="aggregate-matrix">
+            <summary>Агрегированный просмотр — количества по ячейкам</summary>
+            <div className="matrix-scroll">
+              <table className="maturity-matrix">
+                <caption>
+                  Рыночная зрелость (строки) × организационная готовность
+                  (столбцы)
+                </caption>
+                <thead>
+                  <tr>
+                    <th>РЗ ↓ / ОГ →</th>
+                    {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                      <th key={n}>{n}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[5, 4, 3, 2, 1].map((level) => (
+                    <tr key={level}>
+                      <th>{level}</th>
+                      {[1, 2, 3, 4, 5, 6, 7].map((ready) => {
+                        const key = `${level}:${ready}`,
+                          rows = cells.get(key) ?? [];
+                        return (
+                          <td key={key}>
+                            <button
+                              aria-label={`РЗ ${level}, ОГ ${ready}: ${rows.length}`}
+                              aria-pressed={
+                                query.cell === key ||
+                                rows.some((r) => r.id === query.selected)
+                              }
+                              style={{
+                                background: `rgba(34,116,197,${Math.min(0.65, 0.04 + (rows.length / Math.max(1, data.total)) * 4)})`,
+                              }}
+                              onClick={() =>
+                                navigate({ cell: key, selected: undefined })
+                              }
+                            >
+                              {rows.length}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
           <button
             className="unknown-button"
             onClick={() => navigate({ cell: "unknown", selected: undefined })}

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
 import { workspaceQuery } from "@/features/scenarios/filter-state";
 import { scenarioQuery } from "@/domain/scenario";
 import {
@@ -28,6 +28,30 @@ const navigation = [
 ];
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => {
+      if (
+        event.key !== "Escape" ||
+        !/^\/scenarios\/(radar|maturity|catalog)$/.test(
+          window.location.pathname,
+        )
+      )
+        return;
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("selected")) url.searchParams.delete("selected");
+      else if (
+        url.searchParams.has("cluster") ||
+        url.searchParams.has("cell")
+      ) {
+        url.searchParams.delete("cluster");
+        url.searchParams.delete("cell");
+      } else return;
+      router.replace(url.pathname + url.search, { scroll: false });
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [router]);
   const [collapsed, setCollapsed] = useState(false);
   const active = navigation.find((item) => pathname.startsWith(item.href));
   return (
@@ -122,6 +146,7 @@ function Sidebar({
               href={
                 href === "/scenarios" ? workspaceHref("radar", query) : href
               }
+              prefetch={false}
               scroll={false}
               className={`nav-item ${pathname.startsWith(href) ? "active" : ""}`}
               aria-label={label}
@@ -159,6 +184,7 @@ function Sidebar({
                     <Link
                       key={key}
                       href={workspaceHref(key as ScenarioView, query)}
+                      prefetch={false}
                       scroll={false}
                       aria-current={activeView === key ? "page" : undefined}
                       aria-label={label}

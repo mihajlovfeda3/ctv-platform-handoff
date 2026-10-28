@@ -12,8 +12,8 @@ export default function ErrorPage({
         <AlertCircle size={32} />
         <h1>Данные временно недоступны</h1>
         <p>
-          Проверьте подключение к PostgreSQL, примените миграции и загрузите
-          тестовый набор по инструкции README.
+          Не удалось отобразить рабочую область. Повторите загрузку; если ошибка
+          сохранится, проверьте журнал приложения.
         </p>
         <button className="button primary" onClick={reset}>
           <RefreshCw size={15} /> Повторить загрузку

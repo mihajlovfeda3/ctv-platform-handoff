@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ContextLink as Link } from "./camera-context";
 import { RestoreWorkspaceScroll } from "./scroll-context";
 import { workspaceQuery } from "./filter-state";
 import {

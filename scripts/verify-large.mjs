@@ -11,6 +11,7 @@ const child = spawn(
     "node_modules/@playwright/test/cli.js",
     "test",
     "tests/browser/analytics.spec.ts",
+    "tests/browser/viewport.spec.ts",
   ],
   {
     stdio: "inherit",

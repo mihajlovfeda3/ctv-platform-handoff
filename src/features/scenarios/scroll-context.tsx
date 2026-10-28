@@ -1,5 +1,6 @@
 "use client";
-import Link from "next/link";
+import { cameraHref } from "./camera-context";
+import { ContextLink as Link } from "./camera-context";
 import { useEffect } from "react";
 function storageKey(href: string) {
   const url = new URL(href, "http://local");
@@ -25,7 +26,7 @@ export function CardLink({
       onClick={() => {
         try {
           sessionStorage.setItem(
-            storageKey(returnHref),
+            storageKey(cameraHref(returnHref, window.location.search)),
             JSON.stringify({
               top: window.scrollY,
               quickOpen:

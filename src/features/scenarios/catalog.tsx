@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
 import { workspaceHref, cardHref } from "./navigation";
 import { ArrowUpRight, ChevronLeft, ChevronRight, SearchX } from "lucide-react";

@@ -1,8 +1,9 @@
 "use client";
 import { RangeFilter } from "./range-filter";
 import { useState, useTransition, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
+import { ContextLink as CameraLink } from "./camera-context";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   editFilter,
   filterDraft,
@@ -14,7 +15,7 @@ import type { getReferences } from "@/server/scenarios";
 import { workspaceHref, type ScenarioView } from "./navigation";
 const subscribeHydration = () => () => {};
 export function ScenarioFilters({
-  query,
+  query: serverQuery,
   references,
   view,
   invalidDraft,
@@ -25,6 +26,13 @@ export function ScenarioFilters({
   invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
+  const liveParams = useSearchParams();
+  const query = {
+    ...serverQuery,
+    zoom: Number(liveParams.get("zoom") ?? serverQuery.zoom),
+    panX: Number(liveParams.get("panX") ?? serverQuery.panX),
+    panY: Number(liveParams.get("panY") ?? serverQuery.panY),
+  };
   const ready = useSyncExternalStore(
     subscribeHydration,
     () => true,
@@ -183,7 +191,7 @@ export function ScenarioFilters({
           ],
           "Любой статус",
         )}
-        <Link
+        <CameraLink
           replace
           scroll={false}
           className="button"
@@ -193,7 +201,7 @@ export function ScenarioFilters({
           })}
         >
           Сбросить
-        </Link>
+        </CameraLink>
       </div>
       {Object.entries(errors)
         .filter(
