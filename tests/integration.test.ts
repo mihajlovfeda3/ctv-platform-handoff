@@ -205,37 +205,31 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
   });
   it("ограничивает ссылки и оценки непосредственно в БД", async () => {
     await expect(
-      db
-        .insert(s.scenarioTechnologies)
-        .values({
-          scenarioId: stableId("missing-scenario"),
-          methodId: stableId("missing-method"),
-        }),
+      db.insert(s.scenarioTechnologies).values({
+        scenarioId: stableId("missing-scenario"),
+        methodId: stableId("missing-method"),
+      }),
     ).rejects.toThrow();
     const [scenario] = await db.select().from(s.scenarios).limit(1);
     await expect(
-      db
-        .insert(s.assessments)
-        .values({
-          scenarioId: scenario.id,
-          metric: "business_impact",
-          value: 7,
-          organizationalContext: "test-bad",
-          assessedAt: new Date(),
-          isSynthetic: true,
-        }),
+      db.insert(s.assessments).values({
+        scenarioId: scenario.id,
+        metric: "business_impact",
+        value: 7,
+        organizationalContext: "test-bad",
+        assessedAt: new Date(),
+        isSynthetic: true,
+      }),
     ).rejects.toThrow();
     await expect(
-      db
-        .insert(s.assessments)
-        .values({
-          scenarioId: scenario.id,
-          metric: "market_maturity",
-          value: null,
-          organizationalContext: "test-null",
-          assessedAt: new Date(),
-          isSynthetic: true,
-        }),
+      db.insert(s.assessments).values({
+        scenarioId: scenario.id,
+        metric: "market_maturity",
+        value: null,
+        organizationalContext: "test-null",
+        assessedAt: new Date(),
+        isSynthetic: true,
+      }),
     ).rejects.toThrow();
   });
   it("импортирует без вымышленных оценок, хранит raw и пропускает повтор", async () => {
@@ -327,6 +321,30 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
         .set({ parentId: child.id })
         .where(eq(s.businessNodes.id, parent.id)),
     ).rejects.toThrow();
+  });
+  it("фильтрует диапазон оценок и сортирует без загрузки всего набора в браузер", async () => {
+    const rows = await listScenarios(
+      { maturityMin: 2, maturityMax: 4, pageSize: 100 },
+      db,
+    );
+    expect(rows.total).toBeGreaterThan(0);
+    expect(
+      rows.items.every((row) =>
+        row.assessments.some(
+          (a) =>
+            a.metric === "market_maturity" && a.value! >= 2 && a.value! <= 4,
+        ),
+      ),
+    ).toBe(true);
+    const sorted = await listScenarios(
+      { q: "SYN-", sort: "id", order: "desc", pageSize: 3 },
+      db,
+    );
+    expect(sorted.items.map((row) => row.externalId)).toEqual([
+      "SYN-0080",
+      "SYN-0079",
+      "SYN-0078",
+    ]);
   });
   it("расширяет синтетический набор до 2500 записей с серверной пагинацией", async () => {
     await seedDatabase(db, 2500);

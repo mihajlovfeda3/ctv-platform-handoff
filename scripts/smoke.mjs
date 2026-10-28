@@ -9,7 +9,9 @@ async function request(path, expected = 200) {
 }
 for (const path of [
   "/overview",
-  "/scenarios",
+  "/scenarios/catalog",
+  "/scenarios/radar",
+  "/scenarios/maturity",
   "/business",
   "/technologies",
   "/portfolio",

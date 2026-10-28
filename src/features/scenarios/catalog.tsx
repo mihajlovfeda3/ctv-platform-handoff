@@ -1,11 +1,6 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  SearchX,
-  Database,
-} from "lucide-react";
+import { workspaceHref, cardHref } from "./navigation";
+import { ArrowUpRight, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import type { ScenarioList } from "@/server/scenarios";
 import { implementationLabels, type ScenarioQuery } from "@/domain/scenario";
 export function ScenarioCatalog({
@@ -20,7 +15,7 @@ export function ScenarioCatalog({
     for (const [key, value] of Object.entries(query))
       if (value !== undefined && value !== "") params.set(key, String(value));
     params.set("page", String(page));
-    return `/scenarios?${params}`;
+    return `/scenarios/catalog?${params}`;
   };
   return (
     <section className="surface catalog">
@@ -29,9 +24,22 @@ export function ScenarioCatalog({
           <h2>Каталог сценариев</h2>
           <span className="count-badge">{result.total}</span>
         </div>
-        <span className="catalog-source">
-          <Database size={13} /> PostgreSQL <span>·</span> {result.context}
-        </span>
+        <div className="catalog-sort">
+          {["id", "name", "maturity", "readiness", "impact"].map((key, i) => (
+            <Link
+              key={key}
+              href={workspaceHref("catalog", query, {
+                sort: key,
+                order:
+                  query.sort === key && query.order === "asc" ? "desc" : "asc",
+                page: undefined,
+              })}
+            >
+              {["ID", "Название", "РЗ", "ОГ", "Влияние"][i]}
+              {query.sort === key ? (query.order === "asc" ? " ↑" : " ↓") : ""}
+            </Link>
+          ))}
+        </div>
       </div>
       {!result.items.length ? (
         <div className="empty-state">
@@ -40,7 +48,10 @@ export function ScenarioCatalog({
             {result.total ? "Страница вне диапазона" : "Сценарии не найдены"}
           </h3>
           <p>Измените условия поиска или загрузите синтетический набор.</p>
-          <Link href="/scenarios" className="button">
+          <Link
+            href={workspaceHref("catalog", query, { page: 1 })}
+            className="button"
+          >
             Вернуться к каталогу
           </Link>
         </div>
@@ -52,6 +63,7 @@ export function ScenarioCatalog({
                 <th>СЦЕНАРИЙ / БИЗНЕС-ПРОЦЕСС</th>
                 <th>РЫНОЧНАЯ ЗРЕЛОСТЬ</th>
                 <th>ГОТОВНОСТЬ</th>
+                <th>ВЛИЯНИЕ</th>
                 <th>РЕАЛИЗАЦИЯ</th>
                 <th>
                   <span className="sr-only">Открыть</span>
@@ -67,7 +79,7 @@ export function ScenarioCatalog({
                   (a) => a.metric === "organizational_readiness",
                 )?.value;
                 return (
-                  <tr key={item.id}>
+                  <tr key={item.id} aria-selected={query.selected === item.id}>
                     <td>
                       <div className="record-id">
                         {item.externalId}
@@ -77,7 +89,9 @@ export function ScenarioCatalog({
                       </div>
                       <Link
                         className="record-title"
-                        href={`/scenarios/${item.id}`}
+                        href={workspaceHref("catalog", query, {
+                          selected: item.id,
+                        })}
                       >
                         {item.name}
                       </Link>
@@ -112,6 +126,12 @@ export function ScenarioCatalog({
                       </span>
                     </td>
                     <td>
+                      {item.assessments.find(
+                        (a) => a.metric === "business_impact",
+                      )?.value ?? "—"}
+                      <small> / 3</small>
+                    </td>
+                    <td>
                       <span className={`status ${item.implementation}`}>
                         <i />
                         {implementationLabels[item.implementation]}
@@ -119,7 +139,7 @@ export function ScenarioCatalog({
                     </td>
                     <td>
                       <Link
-                        href={`/scenarios/${item.id}`}
+                        href={cardHref(item.id, "catalog", query)}
                         className="row-open"
                         aria-label={`Открыть ${item.externalId}`}
                       >

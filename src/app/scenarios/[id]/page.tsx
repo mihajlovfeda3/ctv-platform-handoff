@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { ArrowLeft } from "lucide-react";
 import { getScenario, relatedObjects } from "@/server/scenarios";
-import { implementationLabels, oodaLabels } from "@/domain/scenario";
+import {
+  implementationLabels,
+  oodaLabels,
+  scenarioQuery,
+} from "@/domain/scenario";
+import { workspaceHref } from "@/features/scenarios/navigation";
+import { Metrics } from "@/features/scenarios/metrics";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Карточка сценария" };
-const metricNames = {
+const names = {
   market_maturity: "Рыночная зрелость",
   organizational_readiness: "Организационная готовность",
   business_impact: "Влияние на бизнес-цели",
@@ -15,153 +20,158 @@ const metricNames = {
 };
 export default async function ScenarioDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const item = await getScenario(id);
   if (!item) notFound();
+  const queryResult = scenarioQuery.safeParse(await searchParams);
+  const query = queryResult.success
+    ? queryResult.data
+    : scenarioQuery.parse({});
   const related = await relatedObjects(id),
-    scenario = item.scenario;
+    s = item.scenario;
+  const current = item.assessments
+    .map((a) => a.assessment)
+    .filter((a) => a.isCurrent && a.organizationalContext === query.context);
+  const date = (d: Date) =>
+    new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow" }).format(d);
   return (
-    <div className="page detail-page">
-      <Link href="/scenarios" className="back-link">
-        <ArrowLeft size={15} /> К каталогу сценариев
+    <div className="page detail-page revised-card">
+      <Link className="back-link" href={workspaceHref(query.from, query)}>
+        ← Вернуться к выборке
       </Link>
-      <div className="detail-header">
+      <header className="detail-header">
         <div className="record-id">
-          {scenario.externalId}
+          {s.externalId}
           <span className="tag">
-            {scenario.isSynthetic
-              ? "Синтетическая запись"
-              : "Импортированная запись"}
+            {s.isSynthetic ? "Синтетическая запись" : "Импортированная запись"}
           </span>
         </div>
-        <h1>{scenario.name}</h1>
-        <p>{scenario.description}</p>
-        <span className={`status ${scenario.implementation}`}>
+        <h1>{s.name}</h1>
+        <p>{s.description}</p>
+        <span className={`status ${s.implementation}`}>
           <i />
-          {implementationLabels[scenario.implementation]}
+          {implementationLabels[s.implementation]}
         </span>
-      </div>
-      <div className="detail-grid">
-        <section className="surface detail-section">
-          <h2>Описание сценария</h2>
-          <dl>
-            {[
-              ["Функциональная группа", item.functionalGroup],
-              ["Бизнес-процесс", item.business],
-              ["Бизнес-вызов", scenario.businessChallenge],
-              ["Обоснование", scenario.rationale],
-              [
-                "Цикл OODA",
-                scenario.ooda
-                  ? oodaLabels[scenario.ooda as keyof typeof oodaLabels]
-                  : null,
-              ],
-              ["Технологический тренд", scenario.technologyTrend],
-              ["Предложение проекта", scenario.projectProposal],
-              ["Источник", item.source],
-              [
-                "Исходный идентификатор",
-                `${scenario.originNamespace} / ${scenario.externalId}`,
-              ],
-              [
-                "Обновлено",
-                new Intl.DateTimeFormat("ru-RU", {
-                  timeZone: "Europe/Moscow",
-                }).format(scenario.updatedAt),
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value ?? "Не указано"}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-        <section className="surface detail-section">
-          <h2>Оценки и их происхождение</h2>
-          <p className="muted">
-            Показатели независимы. Неизвестные значения не рассчитываются.
-          </p>
-          {Object.entries(metricNames).map(([metric, name]) => {
-            const ratings = item.assessments.filter(
-              (a) => a.assessment.metric === metric,
-            );
-            return (
-              <div className="assessment-block" key={metric}>
-                <h3>{name}</h3>
-                {ratings.length ? (
-                  ratings.map(({ assessment: a, source }) => (
-                    <div className="assessment-line" key={a.id}>
-                      <strong>{a.value ?? a.qualitativeValue}</strong>
-                      <div>
-                        <span>
-                          {a.organizationalContext} ·{" "}
-                          {a.isCurrent ? "Текущая" : "Архивная"}
-                        </span>
-                        <small>
-                          {source ?? "Источник не указан"} ·{" "}
-                          {new Intl.DateTimeFormat("ru-RU", {
-                            timeZone: "Europe/Moscow",
-                          }).format(a.assessedAt)}
-                        </small>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <span className="unknown-value">Неизвестно</span>
-                )}
-              </div>
-            );
-          })}
-        </section>
-      </div>
-      <section className="surface detail-section">
-        <h2>Технологическая классификация</h2>
-        {related.technologies.map((t) => (
-          <div className="technology-chain" key={t.id}>
-            <span>{t.direction}</span>
-            <span>→</span>
-            <strong>{t.technology}</strong>
-            <span>→</span>
-            <span>{t.name}</span>
-          </div>
-        ))}
-        {!related.technologies.length && (
-          <p className="muted">Технологии пока не сопоставлены.</p>
-        )}
+      </header>
+      <section className="surface card-context">
+        <div>
+          <span className="muted">Бизнес-процесс</span>
+          <h3>{item.business ?? "Не указан"}</h3>
+          <p>{item.functionalGroup ?? "Группа не указана"}</p>
+        </div>
+        <div>
+          <span className="muted">Технологическая классификация</span>
+          {related.technologies.map((t) => (
+            <p key={t.id}>
+              {t.direction} → <strong>{t.technology}</strong> → {t.name}
+            </p>
+          ))}
+          {!related.technologies.length && <p>Не сопоставлена</p>}
+        </div>
       </section>
-      <div className="related-grid">
+      <Metrics assessments={current} />
+      <section className="surface detail-section">
+        <h2>Бизнес-контекст</h2>
+        <dl>
+          {[
+            ["Бизнес-вызов", s.businessChallenge],
+            ["Обоснование", s.rationale],
+            ["Предложение проекта", s.projectProposal],
+          ].map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v ?? "Не указано"}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section className="surface detail-section linked-objects">
+        <h2>Задачи, эффекты и связанные объекты</h2>
         {[
           ["Классы задач", related.tasks],
           ["Типы бизнес-эффектов", related.effects],
           ["Кейсы бенчмаркинга", related.cases],
           ["Решения поставщиков", related.solutions],
           ["Внутренние проекты", related.projects],
-        ].map(([title, objects]) => (
-          <section className="surface detail-section" key={String(title)}>
-            <h2>{String(title)}</h2>
-            {(objects as { id: string; name: string; vendor?: string }[])
-              .length ? (
-              <ul>
-                {(
-                  objects as { id: string; name: string; vendor?: string }[]
-                ).map((o) => (
-                  <li key={o.id}>
-                    {o.name}
-                    {o.vendor && <small className="muted"> · {o.vendor}</small>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">Связи не добавлены</p>
+        ].map(([title, raw]) => {
+          const rows = raw as { id: string; name: string; vendor?: string }[];
+          return (
+            <div key={String(title)}>
+              <h3>
+                {String(title)} <span>{rows.length}</span>
+              </h3>
+              {rows.length ? (
+                <ul>
+                  {rows.map((r) => (
+                    <li key={r.id}>
+                      {r.name}
+                      {r.vendor && ` · ${r.vendor}`}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="muted">Связи не добавлены</span>
+              )}
+            </div>
+          );
+        })}
+      </section>
+      <details className="surface detail-section">
+        <summary>Дополнительные характеристики и происхождение</summary>
+        <dl>
+          {[
+            [
+              "Цикл OODA",
+              s.ooda ? oodaLabels[s.ooda as keyof typeof oodaLabels] : null,
+            ],
+            ["Технологический тренд", s.technologyTrend],
+            ["Источник", item.source],
+            ["UUID", s.id],
+            ["Исходный ID", `${s.originNamespace} / ${s.externalId}`],
+            ["Создано", date(s.createdAt)],
+            ["Обновлено", date(s.updatedAt)],
+            ["Контекст оценок", query.context],
+          ].map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v ?? "Не указано"}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
+      <details className="surface detail-section">
+        <summary>Все оценки, источники и история</summary>
+        {Object.entries(names).map(([metric, label]) => (
+          <div className="assessment-block" key={metric}>
+            <h3>{label}</h3>
+            {item.assessments
+              .filter((a) => a.assessment.metric === metric)
+              .map(({ assessment: a, source }) => (
+                <div className="assessment-line" key={a.id}>
+                  <strong>{a.value ?? a.qualitativeValue}</strong>
+                  <div>
+                    <span>
+                      {a.organizationalContext} ·{" "}
+                      {a.isCurrent ? "Текущая" : "Архивная"}
+                    </span>
+                    <small>
+                      {source ?? "Источник не указан"} · {date(a.assessedAt)}
+                    </small>
+                  </div>
+                </div>
+              ))}
+            {!item.assessments.some((a) => a.assessment.metric === metric) && (
+              <span className="muted">Неизвестно</span>
             )}
-          </section>
+          </div>
         ))}
-      </div>
+      </details>
     </div>
   );
 }

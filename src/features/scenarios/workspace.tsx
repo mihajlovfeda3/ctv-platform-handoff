@@ -1,0 +1,168 @@
+import Link from "next/link";
+import { scenarioQuery } from "@/domain/scenario";
+import {
+  getReferences,
+  listScenarios,
+  getScenario,
+  relatedObjects,
+} from "@/server/scenarios";
+import { ScenarioFilters } from "./filters";
+import { ScenarioCatalog } from "./catalog";
+import { Inspector } from "./inspector";
+import { RadarWorkspace } from "@/components/radar-workspace";
+import {
+  views,
+  workspaceHref,
+  cardHref,
+  type ScenarioView,
+} from "./navigation";
+export async function Workspace({
+  view,
+  searchParams,
+}: {
+  view: ScenarioView;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const parsed = scenarioQuery.safeParse(await searchParams);
+  if (!parsed.success)
+    return (
+      <div className="page surface empty-state">
+        <h1>Некорректные параметры фильтра</h1>
+        <p>Проверьте диапазоны оценок и идентификаторы.</p>
+        <Link href={`/scenarios/${view}`} className="button">
+          Сбросить параметры
+        </Link>
+      </div>
+    );
+  const query = parsed.data;
+  const [result, references, item] = await Promise.all([
+    listScenarios(query),
+    getReferences(),
+    query.selected ? getScenario(query.selected) : null,
+  ]);
+  const related = item ? await relatedObjects(item.scenario.id) : null;
+  return (
+    <div className="page scenarios-page">
+      <header className="scenario-heading">
+        <div>
+          <div className="eyebrow">ЦИФРОВОЕ ТЕХНОЛОГИЧЕСКОЕ ВИДЕНИЕ</div>
+          <h1>Сценарии применения ЦТ</h1>
+          <p>Исследуйте технологии в контексте бизнес-задач</p>
+        </div>
+        <div className="selection-count">
+          <strong>{result.total.toLocaleString("ru-RU")}</strong> в выборке{" "}
+          <span>Синтетические данные</span>
+        </div>
+      </header>
+      <nav className="scenario-tabs" aria-label="Представления сценариев">
+        {Object.entries(views).map(([key, title]) => (
+          <Link
+            key={key}
+            href={workspaceHref(key as ScenarioView, query)}
+            aria-current={view === key ? "page" : undefined}
+          >
+            {title}
+          </Link>
+        ))}
+      </nav>
+      <ScenarioFilters query={query} references={references} view={view} />
+      <div className="scenario-workspace">
+        {view === "catalog" ? (
+          <ScenarioCatalog result={result} query={query} />
+        ) : (
+          <>
+            <section className="surface analytical-stage">
+              <div className="analytical-heading">
+                <div>
+                  <h2>{views[view]}</h2>
+                  <p>
+                    {view === "radar"
+                      ? "Рыночная зрелость × технологическое направление"
+                      : "Рыночная зрелость × организационная готовность"}
+                  </p>
+                </div>
+                {view === "radar" && (
+                  <div
+                    className="density-switch"
+                    aria-label="Плотность будущей визуализации"
+                  >
+                    {(["groups", "points"] as const).map((mode) => (
+                      <Link
+                        key={mode}
+                        href={workspaceHref(view, query, { mode })}
+                        aria-current={query.mode === mode ? "true" : undefined}
+                      >
+                        {mode === "groups" ? "Группы" : "Точки"}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {view === "radar" ? (
+                <RadarWorkspace />
+              ) : (
+                <div className="maturity-placeholder">
+                  <div className="matrix-outline" aria-hidden="true" />
+                  <h3>Матрица зрелости</h3>
+                  <p>Представление РЗ × ОГ будет реализовано в части №2Б.</p>
+                </div>
+              )}
+              <div className="stage-note">
+                {view === "radar"
+                  ? "Подложка рабочего пространства. Точки и группировка появятся после утверждения №2А."
+                  : "Общие фильтры и выбор сценария сохранены. Аналитические значения пока не отображаются."}
+              </div>
+            </section>
+            <details className="surface quick-scenarios">
+              <summary>
+                Сценарии текущей выборки{" "}
+                <span>Быстрый просмотр · {result.total}</span>
+              </summary>
+              <div className="quick-grid">
+                {result.items.slice(0, 6).map((row) => (
+                  <Link
+                    key={row.id}
+                    href={workspaceHref(view, query, { selected: row.id })}
+                    scroll={false}
+                  >
+                    <strong>{row.name}</strong>
+                    <small>
+                      {row.externalId} · {row.business}
+                    </small>
+                  </Link>
+                ))}
+                {!result.items.length && (
+                  <p>Сценарии не найдены. Измените фильтры.</p>
+                )}
+              </div>
+              <Link
+                className="quick-all"
+                href={workspaceHref("catalog", query)}
+              >
+                Весь каталог →
+              </Link>
+            </details>
+          </>
+        )}
+        {item && related && (
+          <Inspector
+            key={item.scenario.id}
+            item={item}
+            related={related}
+            context={query.context}
+            closeHref={workspaceHref(view, query, { selected: undefined })}
+            fullHref={cardHref(item.scenario.id, view, query)}
+          />
+        )}
+        {query.selected && !item && (
+          <div className="selection-warning">
+            Выбранный сценарий не найден.{" "}
+            <Link href={workspaceHref(view, query, { selected: undefined })}>
+              Закрыть выбор
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

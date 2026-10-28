@@ -64,7 +64,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <CircleHelp size={17} /> О платформе <ArrowUpRight size={14} />
           </Link>
           <div className="sidebar-version">
-            ТЕХНИЧЕСКИЙ ФУНДАМЕНТ <span>v0.1</span>
+            ПЛАТФОРМА ЦТВ <span>v0.1</span>
           </div>
         </div>
       </aside>
@@ -76,7 +76,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="topbar-right">
             <span className="iteration">
-              <span className="live-dot" /> Итерация 01
+              <span className="live-dot" /> Синтетическая среда
             </span>
             <span
               className="avatar"

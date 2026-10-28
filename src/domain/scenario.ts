@@ -55,22 +55,48 @@ const optionalScore = (max: number) =>
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
     z.number().int().min(1).max(max).optional(),
   );
-export const scenarioQuery = z.object({
-  q: z.string().trim().max(200).default(""),
-  page: z.coerce.number().int().min(1).max(100000).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(12),
-  directionId: optionalId,
-  businessNodeId: optionalId,
-  functionalGroupId: optionalId,
-  implementation: z.preprocess(
-    (v) => (v === "" ? undefined : v),
-    z.enum(["yes", "no", "unknown"]).optional(),
-  ),
-  maturity: optionalScore(5),
-  readiness: optionalScore(7),
-  impact: optionalScore(3),
-  context: z.string().trim().min(1).max(160).default("synthetic-lab"),
-});
+export const scenarioQuery = z
+  .object({
+    selected: optionalId,
+    mode: z.enum(["groups", "points"]).default("groups"),
+    from: z.enum(["catalog", "radar", "maturity"]).default("catalog"),
+    sort: z
+      .enum(["id", "name", "maturity", "readiness", "impact"])
+      .default("id"),
+    order: z.enum(["asc", "desc"]).default("asc"),
+    maturityMin: optionalScore(5),
+    maturityMax: optionalScore(5),
+    readinessMin: optionalScore(7),
+    readinessMax: optionalScore(7),
+    impactMin: optionalScore(3),
+    impactMax: optionalScore(3),
+    q: z.string().trim().max(200).default(""),
+    page: z.coerce.number().int().min(1).max(100000).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(12),
+    directionId: optionalId,
+    businessNodeId: optionalId,
+    functionalGroupId: optionalId,
+    implementation: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z.enum(["yes", "no", "unknown"]).optional(),
+    ),
+    maturity: optionalScore(5),
+    readiness: optionalScore(7),
+    impact: optionalScore(3),
+    context: z.string().trim().min(1).max(160).default("synthetic-lab"),
+  })
+  .superRefine((v, ctx) => {
+    for (const prefix of ["maturity", "readiness", "impact"] as const) {
+      const min = v[`${prefix}Min`],
+        max = v[`${prefix}Max`];
+      if (min !== undefined && max !== undefined && min > max)
+        ctx.addIssue({
+          code: "custom",
+          path: [`${prefix}Max`],
+          message: "Верхняя граница меньше нижней",
+        });
+    }
+  });
 export type ScenarioQuery = z.infer<typeof scenarioQuery>;
 export const implementationLabels = {
   yes: "Реализуется",
