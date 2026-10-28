@@ -97,15 +97,14 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     expect(refs.businessDirections.map((x) => x.name)).toContain(
       "Управление имуществом",
     );
-    expect(refs.blocks).toHaveLength(0);
+    expect(refs.blocks).toHaveLength(11);
+    expect(refs.businessDirections).toHaveLength(31);
     const blockId = stableId("test-only-block");
-    await db
-      .insert(s.organizationalBlocks)
-      .values({
-        id: blockId,
-        name: "Тестовый блок (только автоматический тест)",
-        isSynthetic: true,
-      });
+    await db.insert(s.organizationalBlocks).values({
+      id: blockId,
+      name: "Тестовый блок (только автоматический тест)",
+      isSynthetic: true,
+    });
     const [link] = await db.select().from(s.scenarioClassification).limit(1);
     await db
       .update(s.scenarioClassification)
@@ -139,6 +138,25 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     await db
       .delete(s.organizationalBlocks)
       .where(eq(s.organizationalBlocks.id, blockId));
+  });
+  it("каждый элемент полного справочника участвует в фильтрации", async () => {
+    const refs = await getReferences(db);
+    expect(refs.directions.map((d) => d.name)).toContain(
+      "Беспилотные воздушные средства",
+    );
+    expect(refs.directions.map((d) => d.name)).not.toContain("БВС");
+    for (const business of refs.businessDirections)
+      expect(
+        (await listScenarios({ businessDirectionId: business.id }, db)).total,
+      ).toBeGreaterThan(0);
+    for (const block of refs.blocks)
+      expect(
+        (await listScenarios({ blockId: block.id }, db)).total,
+      ).toBeGreaterThan(0);
+    for (const direction of refs.directions)
+      expect(
+        (await listScenarios({ directionId: direction.id }, db)).total,
+      ).toBeGreaterThan(0);
   });
   it("повторный seed сохраняет несинтетические записи и их связи", async () => {
     const id = stableId("real-preservation-test");

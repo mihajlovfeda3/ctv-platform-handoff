@@ -84,6 +84,14 @@ export default async function ScenarioDetail({
         <h2>Бизнес-контекст</h2>
         <dl>
           {[
+            ["Блок «Газпром нефти»", item.classification?.block],
+            ["Бизнес-направление", item.classification?.businessDirection],
+            [
+              "Происхождение связей классификации",
+              item.classification?.isSynthetic
+                ? "Синтетические назначения"
+                : "Не указано",
+            ],
             ["Бизнес-вызов", s.businessChallenge],
             ["Обоснование", s.rationale],
             ["Предложение проекта", s.projectProposal],

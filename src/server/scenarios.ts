@@ -93,9 +93,15 @@ export async function listScenarios(
           implementation: s.scenarios.implementation,
           isSynthetic: s.scenarios.isSynthetic,
           business: s.businessNodes.name,
+          blockId: s.scenarioClassification.blockId,
+          businessDirectionId: s.scenarioClassification.businessDirectionId,
           functionalGroup: s.functionalGroups.name,
         })
         .from(s.scenarios)
+        .leftJoin(
+          s.scenarioClassification,
+          eq(s.scenarios.id, s.scenarioClassification.scenarioId),
+        )
         .leftJoin(
           s.businessNodes,
           eq(s.scenarios.businessNodeId, s.businessNodes.id),
@@ -164,7 +170,23 @@ export async function getScenario(id: string, db: Database = getDatabase()) {
     .leftJoin(s.sources, eq(s.assessments.sourceId, s.sources.id))
     .where(eq(s.assessments.scenarioId, id))
     .orderBy(asc(s.assessments.metric));
-  return { ...item, assessments: ratings };
+  const [classification] = await db
+    .select({
+      block: s.organizationalBlocks.name,
+      businessDirection: s.businessDirections.name,
+      isSynthetic: s.scenarioClassification.isSynthetic,
+    })
+    .from(s.scenarioClassification)
+    .leftJoin(
+      s.organizationalBlocks,
+      eq(s.scenarioClassification.blockId, s.organizationalBlocks.id),
+    )
+    .leftJoin(
+      s.businessDirections,
+      eq(s.scenarioClassification.businessDirectionId, s.businessDirections.id),
+    )
+    .where(eq(s.scenarioClassification.scenarioId, id));
+  return { ...item, classification, assessments: ratings };
 }
 export async function relatedObjects(id: string, db: Database = getDatabase()) {
   const [technologies, tasks, effects, cases, solutions, projects] =

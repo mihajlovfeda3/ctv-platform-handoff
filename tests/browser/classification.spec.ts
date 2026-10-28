@@ -6,8 +6,10 @@ test("database classifiers filter and survive all workspace routes", async ({
 }, info) => {
   const refs = await (await request.get("/api/references")).json();
   expect(refs.directions).toHaveLength(8);
-  expect(refs.blocks).toHaveLength(0);
+  expect(refs.blocks).toHaveLength(11);
+  expect(refs.businessDirections).toHaveLength(31);
   let directionId: string | undefined;
+  let blockId: string | undefined;
   for (const direction of refs.directions) {
     const result = await (
       await request.get(
@@ -20,6 +22,7 @@ test("database classifiers filter and survive all workspace routes", async ({
     ).json();
     if (result.total > 0) {
       directionId = direction.id;
+      blockId = result.items[0].blockId;
       break;
     }
   }
@@ -40,6 +43,12 @@ test("database classifiers filter and survive all workspace routes", async ({
     "aria-busy",
     "false",
   );
+  await page.locator("[name=blockId]").selectOption(blockId!);
+  await expect(page).toHaveURL(/blockId=/);
+  await expect(page.locator(".shared-filters")).toHaveAttribute(
+    "aria-busy",
+    "false",
+  );
   const filtered = await (
     await request.get("/api/scenarios?" + new URL(page.url()).searchParams)
   ).json();
@@ -54,6 +63,7 @@ test("database classifiers filter and survive all workspace routes", async ({
     await expect(page).toHaveURL(new RegExp(`/scenarios/${view}\\?`));
     const params = new URL(page.url()).searchParams;
     expect(params.get("selected")).toBe(selected);
+    expect(params.get("blockId")).toBe(blockId);
     expect(params.get("businessDirectionId")).toBe(
       refs.businessDirections[0].id,
     );

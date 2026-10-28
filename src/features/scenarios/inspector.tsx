@@ -63,6 +63,13 @@ export function Inspector({
           .map((a) => a.assessment)
           .filter((a) => a.isCurrent && a.organizationalContext === context)}
       />
+      <h3>Блок «Газпром нефти»</h3>
+      <p>{item.classification?.block ?? "Не указан"}</p>
+      <h3>Бизнес-направление</h3>
+      <p>{item.classification?.businessDirection ?? "Не указано"}</p>
+      {item.classification?.isSynthetic && (
+        <p>Связи классификации синтетические</p>
+      )}
       <h3>Бизнес-процесс</h3>
       <p>{item.business ?? "Не указан"}</p>
       <h3>Технологическая классификация</h3>

@@ -1,6 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { Database } from "@/db/client";
 import * as s from "@/db/schema";
+import {
+  organizationalBlockNames,
+  businessDirectionNames,
+} from "@/domain/terminology";
 import { stableId } from "@/lib/identity";
 
 export const originalDirections = [
@@ -11,7 +15,7 @@ export const originalDirections = [
   "Блокчейн и смарт-контракты",
   "Промышленный интернет",
   "Робототехника и 3D-печать",
-  "БВС",
+  "Беспилотные воздушные средства",
 ];
 export const demoId = (key: string) =>
   stableId(`ctv-demo-classification-v2:${key}`);
@@ -23,11 +27,20 @@ export async function seedDemoClassification(db: Database) {
       .insert(s.sources)
       .values({
         id: sourceId,
-        name: "Демонстрационная классификация v2: названия из референсов; связи вымышлены",
+        name: "Демонстрационная классификация: терминология предоставлена пользователем; связи вымышлены",
         kind: "synthetic",
         isSynthetic: true,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: s.sources.id,
+        set: {
+          name: "Демонстрационная классификация: терминология предоставлена пользователем; связи вымышлены",
+        },
+        setWhere: and(
+          eq(s.sources.isSynthetic, true),
+          eq(s.sources.kind, "synthetic"),
+        ),
+      });
     const meta = (key: string, name: string) => ({
       id: demoId(key),
       name,
@@ -35,9 +48,23 @@ export async function seedDemoClassification(db: Database) {
       isSynthetic: true,
       description: "ctv-demo-classification-v2",
     });
-    const business = ["Управление имуществом", "Переработка"].map((name, i) =>
-      meta(`business:${i}`, name),
+    const business = businessDirectionNames.map((name) =>
+      meta(
+        name === "Управление имуществом"
+          ? "business:0"
+          : name === "Переработка"
+            ? "business:1"
+            : `business-name:${name}`,
+        name,
+      ),
     );
+    const blocks = organizationalBlockNames.map((name) =>
+      meta(`block:${name}`, name),
+    );
+    await tx
+      .insert(s.organizationalBlocks)
+      .values(blocks)
+      .onConflictDoNothing();
     await tx
       .insert(s.businessDirections)
       .values(business)
@@ -46,7 +73,14 @@ export async function seedDemoClassification(db: Database) {
       await tx
         .insert(s.technologyDirections)
         .values(meta(`direction:${i}`, name))
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: s.technologyDirections.id,
+          set: { name },
+          setWhere: and(
+            eq(s.technologyDirections.isSynthetic, true),
+            eq(s.technologyDirections.sourceId, sourceId),
+          ),
+        });
       await tx
         .insert(s.keyTechnologies)
         .values({
@@ -87,10 +121,22 @@ export async function seedDemoClassification(db: Database) {
         .values({
           scenarioId: row.id,
           businessDirectionId: business[i % business.length].id,
+          blockId: blocks[i % blocks.length].id,
           sourceId,
           isSynthetic: true,
         })
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: s.scenarioClassification.scenarioId,
+          set: {
+            businessDirectionId: business[i % business.length].id,
+            blockId: blocks[i % blocks.length].id,
+            updatedAt: new Date(),
+          },
+          setWhere: and(
+            eq(s.scenarioClassification.isSynthetic, true),
+            eq(s.scenarioClassification.sourceId, sourceId),
+          ),
+        });
       // Preserve non-synthetic and externally supplied links, including on synthetic scenarios.
       await tx
         .delete(s.scenarioTechnologies)
@@ -112,10 +158,10 @@ export async function seedDemoClassification(db: Database) {
         .onConflictDoNothing();
     }
     return {
-      version: 2,
+      version: 3,
       technologyDirections: 8,
-      businessDirections: 2,
-      organizationalBlocks: 0,
+      businessDirections: business.length,
+      organizationalBlocks: blocks.length,
       scenarios: owned.length,
     };
   });
