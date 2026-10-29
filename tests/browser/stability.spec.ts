@@ -92,14 +92,20 @@ test("all exact scores clear ranges, invalid bounds stay inline, deep links rema
   await page.goto("/scenarios/catalog");
   await page.locator(".advanced-filters summary").click();
   for (const [prefix, , value, max] of [["impact", "Влияние", "3", "2"]]) {
-    await page.locator(`[name=${prefix}Max]`).selectOption(max);
+    await page.getByRole("button", { name: "Влияние до", exact: true }).click();
+    await page.getByRole("option", { name: max, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${prefix}Max=${max}`));
     await settled(page);
-    await page.locator(`[name=${prefix}]`).selectOption(value);
+    await page
+      .getByRole("button", { name: "Влияние: точное значение", exact: true })
+      .click();
+    await page.getByRole("option", { name: value, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${prefix}=${value}`));
     await settled(page);
     expect(new URL(page.url()).searchParams.has(`${prefix}Max`)).toBe(false);
-    await expect(page.locator(`[name=${prefix}Max]`)).toHaveValue("");
+    await expect(
+      page.getByRole("button", { name: "Влияние до", exact: true }),
+    ).toHaveText("Не ограничено");
   }
   await page.goto("/scenarios/catalog?readinessMin=6&readinessMax=4");
   await expect(page.locator("#error-readinessMax")).toBeVisible();

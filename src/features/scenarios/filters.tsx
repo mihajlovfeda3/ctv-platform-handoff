@@ -1,5 +1,6 @@
 "use client";
 import { RangeFilter } from "./range-filter";
+import { Select } from "@/components/select";
 import { useState, useTransition, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContextLink as CameraLink } from "./camera-context";
@@ -59,33 +60,55 @@ export function ScenarioFilters({
     label: string,
     items: { id: string; name: string }[],
     empty = "Все",
-  ) => (
-    <label key={key}>
-      <span>{label}</span>
-      <select
-        disabled={!ready}
-        name={key}
-        value={draft[key] ?? ""}
-        onChange={() => {}}
-        aria-invalid={!!errors[key]}
-        aria-describedby={errors[key] ? `error-${key}` : undefined}
-      >
-        <option value="">{empty}</option>
-        {items.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
-      </select>
-      {errors[key] && (
-        <small className="filter-error" id={`error-${key}`} role="alert">
-          {errors[key]}
-        </small>
-      )}
-    </label>
-  );
+  ) =>
+    view === "catalog" ? (
+      <div className="filter-field" key={key}>
+        <span>{label}</span>
+        <Select
+          label={label}
+          value={draft[key] ?? ""}
+          items={[{ id: "", name: empty }, ...items]}
+          disabled={!ready}
+          invalid={!!errors[key]}
+          describedBy={errors[key] ? `error-${key}` : undefined}
+          onValueChange={(value) => applyValue(key, value)}
+        />
+        {errors[key] && (
+          <small className="filter-error" id={`error-${key}`} role="alert">
+            {errors[key]}
+          </small>
+        )}
+      </div>
+    ) : (
+      <label key={key}>
+        <span>{label}</span>
+        <select
+          disabled={!ready}
+          name={key}
+          value={draft[key] ?? ""}
+          onChange={() => {}}
+          aria-invalid={!!errors[key]}
+          aria-describedby={errors[key] ? `error-${key}` : undefined}
+        >
+          <option value="">{empty}</option>
+          {items.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </select>
+        {errors[key] && (
+          <small className="filter-error" id={`error-${key}`} role="alert">
+            {errors[key]}
+          </small>
+        )}
+      </label>
+    );
   function apply(target: HTMLInputElement | HTMLSelectElement) {
-    const next = editFilter(draft, target.name, target.value);
+    applyValue(target.name, target.value);
+  }
+  function applyValue(name: string, value: string) {
+    const next = editFilter(draft, name, value);
     setDraft(next);
     if (Object.keys(filterErrors(next)).length) return;
     const patch: Record<string, string | undefined> = { page: undefined };
@@ -366,9 +389,19 @@ export function ScenarioFilters({
 
           <label>
             <span>Бизнес-процесс / этап</span>
-            <select disabled aria-label="Бизнес-процесс / этап">
-              <option>Справочник не согласован</option>
-            </select>
+            {view === "catalog" ? (
+              <Select
+                disabled
+                label="Бизнес-процесс / этап"
+                value=""
+                items={[{ id: "", name: "Справочник не согласован" }]}
+                onValueChange={() => {}}
+              />
+            ) : (
+              <select disabled aria-label="Бизнес-процесс / этап">
+                <option>Справочник не согласован</option>
+              </select>
+            )}
           </label>
           {field(
             "functionalGroupId",

@@ -2945,19 +2945,153 @@ tbody tr:hover {
   outline: 2px solid var(--blue);
   border-radius: 5px;
 }
+/* Compact selection control. Popovers use a fixed portal to avoid clipping. */
+.ctv-select {
+  min-width: 0;
+  width: 100%;
+}
+.ctv-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid #e0e6ed;
+  border-radius: 6px;
+  background: #fff;
+  color: #344b61;
+  text-align: left;
+  font-size: 12px;
+  line-height: 20px;
+}
+.ctv-select-trigger > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ctv-select-trigger > svg {
+  flex-shrink: 0;
+  color: #8a99a8;
+}
+.ctv-select-trigger:hover:not(:disabled) {
+  border-color: #b9c9d9;
+  background: #fcfdff;
+}
+.ctv-select-trigger[aria-expanded="true"] {
+  border-color: #8dacca;
+  box-shadow: 0 0 0 2px #1666bc0b;
+}
+.ctv-select-trigger:focus-visible {
+  outline-offset: 1px;
+}
+.ctv-select-trigger:disabled {
+  background: #f3f5f8;
+  color: #8b98a7;
+}
+.ctv-select-trigger[data-invalid="true"] {
+  border-color: #c35454;
+  background: #fffafa;
+}
+.ctv-select-popover {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  border: 1px solid #dfe6ef;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow:
+    0 8px 30px #22395220,
+    0 2px 6px #22395209;
+  color: #344b61;
+  font:
+    12px/1.5 "Segoe UI",
+    Arial,
+    sans-serif;
+}
+.ctv-select-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px 10px;
+  border-bottom: 1px solid #edf0f5;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+  color: #7b8ea2;
+}
+.ctv-select-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: 0;
+  color: #344b61;
+}
+.ctv-select-search:focus-within {
+  border-color: #9cbddd;
+}
+.ctv-select-options {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  outline: 0;
+}
+.ctv-select-options [role="option"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  min-height: 34px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.ctv-select-options [role="option"] > svg {
+  flex-shrink: 0;
+  color: var(--blue);
+}
+.ctv-select-options [aria-selected="true"] {
+  color: #175b9c;
+  font-weight: 600;
+}
+.ctv-select-options [data-active="true"] {
+  background: #eef4fb;
+}
+.ctv-select-options:focus-visible [data-active="true"] {
+  outline: 1px solid #9cbddd;
+  outline-offset: -1px;
+}
+.ctv-select-empty {
+  padding: 14px 10px;
+  color: #8491a1;
+}
 /* Catalog 3.3: scoped so analytical visualizations retain their presentation. */
 .catalog-page {
   --catalog-line: #e8edf2;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.catalog-page .scenario-heading {
+  margin-bottom: 18px;
+}
+.catalog-page .scenario-heading h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
 }
 .catalog-page .scenario-tabs {
   margin-bottom: 16px;
 }
 .catalog-page .catalog-filters {
   position: relative;
-  padding: 12px 16px;
+  padding: 14px 0 12px;
   margin-bottom: 16px;
   box-shadow: none;
-  border-color: var(--catalog-line);
+  border: 0;
+  border-bottom: 1px solid var(--catalog-line);
+  border-radius: 0;
+  background: transparent;
 }
 .catalog-filters .shared-filter-row {
   grid-template-columns: minmax(240px, 1.6fr) minmax(180px, 1fr) minmax(
@@ -2969,7 +3103,7 @@ tbody tr:hover {
 }
 .catalog-filters .shared-filter-row > .button {
   position: absolute;
-  right: 16px;
+  right: 0;
   bottom: 9px;
   height: 28px;
   padding: 4px 10px;
@@ -2978,10 +3112,27 @@ tbody tr:hover {
   border: 0;
   color: #4f6d89;
 }
-.catalog-filters label > span {
+.catalog-filters label > span,
+.catalog-filters .filter-field > span {
   font-size: 10px;
   letter-spacing: 0.02em;
   color: #61758b;
+}
+.catalog-filters .filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.catalog-filters input {
+  border-color: #e0e6ed;
+  background: #fff;
+}
+.catalog-filters input:hover {
+  border-color: #bdcbd9;
+}
+.catalog-filters input:focus-visible {
+  outline-offset: 1px;
 }
 .catalog-filters .advanced-filters {
   font-size: 11px;
@@ -3027,13 +3178,15 @@ tbody tr:hover {
 }
 .catalog-refined {
   overflow: hidden;
-  border-color: var(--catalog-line);
+  border: 0;
+  border-radius: 8px;
   box-shadow: none;
 }
 .catalog-refined .catalog-heading {
-  padding: 13px 16px;
-  min-height: 52px;
-  border-bottom: 1px solid var(--catalog-line);
+  padding: 8px 14px 12px;
+  min-height: 40px;
+  background: var(--background);
+  border: 0;
 }
 .catalog-refined h2 {
   font-size: 14px;
@@ -3041,12 +3194,22 @@ tbody tr:hover {
 .catalog-count {
   color: #708399;
   font-size: 12px;
-  margin-left: 12px;
+  margin-left: 0;
   font-variant-numeric: tabular-nums;
 }
-.catalog-keyboard-hint {
-  font-size: 10px;
-  color: #8492a1;
+.catalog-name-sort a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #60748b;
+}
+.catalog-name-sort a:hover {
+  color: var(--blue);
+}
+.catalog-refined a:focus-visible {
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 .catalog-refined .table-scroll {
   overflow-x: auto;
@@ -3080,11 +3243,6 @@ tbody tr:hover {
 .catalog-refined .scenario-table th:nth-child(5) {
   width: 19% !important;
 }
-.scenario-sort-heading {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
 .scenario-table th a {
   display: inline-flex;
   align-items: center;
@@ -3093,12 +3251,9 @@ tbody tr:hover {
 .scenario-table th a:hover {
   color: var(--blue);
 }
-.id-sort {
-  margin-left: auto;
-}
 .catalog-refined .scenario-table td {
-  height: 64px;
-  padding: 9px 16px !important;
+  height: 68px;
+  padding: 7px 16px !important;
   font-size: 13px;
   border-bottom: 1px solid var(--catalog-line);
   font-variant-numeric: tabular-nums;
@@ -3113,7 +3268,7 @@ tbody tr:hover {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  line-height: 20px;
+  line-height: 19px;
   display: block;
   overflow: hidden;
   white-space: nowrap;
@@ -3125,13 +3280,15 @@ tbody tr:hover {
   gap: 7px;
   align-items: center;
   font-size: 11px;
-  line-height: 18px;
+  line-height: 15px;
   color: #7c8b9c;
   overflow: hidden;
   white-space: nowrap;
 }
 .catalog-refined .record-id {
+  display: block;
   font-size: 10px;
+  line-height: 13px;
   letter-spacing: 0.02em;
   color: #7c8b9c;
   flex-shrink: 0;
@@ -3155,7 +3312,7 @@ tbody tr:hover {
   cursor: pointer;
 }
 .catalog-refined .scenario-table tbody tr:hover {
-  background: #f6f9fd;
+  background: #f2f6fb;
 }
 .catalog-refined .scenario-table tbody tr[aria-selected="true"] {
   background: #edf4ff;
@@ -3174,6 +3331,13 @@ tbody tr:hover {
   font-size: 11px;
   gap: 16px;
   flex-wrap: wrap;
+}
+.catalog-refined .page-size .ctv-select {
+  width: 64px;
+}
+.catalog-refined .page-size .ctv-select-trigger {
+  min-height: 30px;
+  padding: 4px 8px;
 }
 .catalog-refined .page-size {
   display: flex;
@@ -3338,9 +3502,6 @@ tbody tr:hover {
   }
   .catalog-filters .scenario-search {
     grid-column: 1/-1 !important;
-  }
-  .catalog-keyboard-hint {
-    display: none;
   }
 }
 @media (max-width: 800px) {

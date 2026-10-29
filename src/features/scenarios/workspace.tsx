@@ -50,7 +50,7 @@ export async function Workspace({
     >
       <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
-        <h1>Сценарии применения ЦТ</h1>
+        <h1>{view === "catalog" ? "Каталог сценариев" : views[view]}</h1>
       </header>
       <nav className="scenario-tabs" aria-label="Представления сценариев">
         {Object.entries(views).map(([key, title]) => (

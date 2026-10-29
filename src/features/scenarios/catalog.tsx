@@ -5,6 +5,7 @@ import { workspaceHref, cardHref } from "./navigation";
 import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { cameraHref } from "./camera-context";
+import { Select } from "@/components/select";
 import {
   ChevronLeft,
   ChevronRight,
@@ -71,15 +72,10 @@ export function ScenarioCatalog({
       aria-busy={!ready}
     >
       <div className="catalog-heading">
-        <div className="title-inline">
-          <h2>Каталог сценариев</h2>
-          <span className="catalog-count" aria-live="polite">
-            {result.total.toLocaleString("ru-RU")} найдено
-          </span>
-        </div>
-        <span className="catalog-keyboard-hint">
-          ↑ ↓ — по строкам · Enter — просмотр
+        <span className="catalog-count" aria-live="polite">
+          {result.total.toLocaleString("ru-RU")} сценариев найдено
         </span>
+        <span className="catalog-name-sort">{sort("name", "По названию")}</span>
       </div>
       {!result.items.length ? (
         <div className="empty-state">
@@ -112,10 +108,7 @@ export function ScenarioCatalog({
             <thead>
               <tr>
                 <th aria-sort={ariaSort(query.sort === "id" ? "id" : "name")}>
-                  <div className="scenario-sort-heading">
-                    {sort("name", "Сценарий")}
-                    <span className="id-sort">{sort("id", "ID")}</span>
-                  </div>
+                  {sort("id", "ID")}
                 </th>
                 <th aria-sort={ariaSort("maturity")}>
                   {sort("maturity", "РЗ")}
@@ -195,6 +188,7 @@ export function ScenarioCatalog({
                     }}
                   >
                     <td>
+                      <span className="record-id">{item.externalId}</span>
                       <Link
                         className="record-title"
                         title={item.name}
@@ -205,8 +199,6 @@ export function ScenarioCatalog({
                         {item.name}
                       </Link>
                       <div className="record-context">
-                        <span className="record-id">{item.externalId}</span>
-                        <span aria-hidden="true">·</span>
                         <span title={businessContext}>{businessContext}</span>
                         <CardLink
                           className="row-card-link"
@@ -240,25 +232,26 @@ export function ScenarioCatalog({
             ? `${result.items.length ? (result.page - 1) * result.pageSize + 1 : 0}–${Math.min(result.page * result.pageSize, result.total)} из ${result.total}`
             : "Нет записей"}
         </span>
-        <label className="page-size">
-          Строк на странице
-          <select
-            aria-label="Строк на странице"
-            value={query.pageSize}
-            onChange={(e) =>
+        <div className="page-size">
+          <span>Строк на странице</span>
+          <Select
+            label="Строк на странице"
+            value={String(query.pageSize)}
+            items={Array.from(new Set([query.pageSize, 25, 50])).map((n) => ({
+              id: String(n),
+              name: String(n),
+            }))}
+            onValueChange={(value) =>
               router.replace(
-                href({ pageSize: Number(e.target.value), page: 1 }),
+                cameraHref(
+                  href({ pageSize: Number(value), page: 1 }),
+                  window.location.search,
+                ),
                 { scroll: false },
               )
             }
-          >
-            {![25, 50].includes(query.pageSize) && (
-              <option value={query.pageSize}>{query.pageSize}</option>
-            )}
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </label>
+          />
+        </div>
         <div>
           {result.page > 1 ? (
             <Link

@@ -1,7 +1,7 @@
 import type { ScenarioQuery } from "@/domain/scenario";
 export const views = {
-  radar: "Технологический радар",
   catalog: "Каталог",
+  radar: "Технологический радар",
   maturity: "Матрица зрелости",
 } as const;
 export type ScenarioView = keyof typeof views;

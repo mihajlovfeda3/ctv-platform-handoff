@@ -12,7 +12,9 @@ test("catalog defaults, sortable headings, paging and consistent scores", async 
   await page.goto("/scenarios/catalog");
   await ready(page);
   await expect(page.locator(".catalog tbody tr")).toHaveCount(25);
-  await expect(page.getByLabel("Строк на странице")).toHaveValue("25");
+  await expect(
+    page.getByRole("button", { name: "Строк на странице" }),
+  ).toHaveText("25");
   await expect(page.locator(".catalog tbody tr").last()).toBeVisible();
   const heights = await page
     .locator(".catalog tbody tr")
@@ -45,7 +47,8 @@ test("catalog defaults, sortable headings, paging and consistent scores", async 
       .poll(() => new URL(page.url()).searchParams.get("order"))
       .not.toBe(first);
   }
-  await page.getByLabel("Строк на странице").selectOption("50");
+  await page.getByRole("button", { name: "Строк на странице" }).click();
+  await page.getByRole("option", { name: "50", exact: true }).click();
   await expect(page.locator(".catalog tbody tr")).toHaveCount(50);
   await page
     .getByRole("link", { name: "Следующая страница", exact: true })
@@ -135,4 +138,85 @@ test("row keyboard navigation, inspector updates, Esc and full card return retai
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(top, 0);
   expect(new URL(page.url()).searchParams.get("sort")).toBe("id");
   expect(id).toBeTruthy();
+});
+
+test("view titles, ID hierarchy and searchable keyboard-accessible filters", async ({
+  page,
+}) => {
+  await page.goto("/scenarios/catalog");
+  await ready(page);
+  await expect(page.locator("h1")).toHaveText("Каталог сценариев");
+  await expect(page.locator(".catalog h2, .catalog-keyboard-hint")).toHaveCount(
+    0,
+  );
+  await expect(page.locator(".scenario-tabs a")).toHaveText([
+    "Каталог",
+    "Технологический радар",
+    "Матрица зрелости",
+  ]);
+  await expect(page.locator(".catalog th")).toHaveCount(5);
+  await expect(page.locator(".catalog th").first()).toHaveText(/ID/);
+  const row = page.locator(".catalog tbody tr").first();
+  const idBox = await row.locator(".record-id").boundingBox();
+  const nameBox = await row.locator(".record-title").boundingBox();
+  expect(idBox!.y + idBox!.height).toBeLessThanOrEqual(nameBox!.y);
+  await row.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".catalog-inspector")).toBeVisible();
+  const selected = new URL(page.url()).searchParams.get("selected");
+  const technology = page.getByRole("button", {
+    name: "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
+    exact: true,
+  });
+  await technology.focus();
+  await page.keyboard.press("ArrowDown");
+  const search = page.getByRole("combobox", {
+    name: "Поиск: ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
+  });
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".catalog-inspector")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".catalog-inspector")).toHaveCount(0);
+  await technology.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(search).toBeFocused();
+  await search.fill("нет-такого-направления");
+  await expect(page.getByRole("status")).toHaveText("Ничего не найдено");
+  await search.fill("Искусственный интеллект");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/directionId=/);
+  await ready(page);
+  await expect(page.locator(".filter-chips")).toContainText(
+    "Искусственный интеллект",
+  );
+  await expect(technology).toBeFocused();
+  await technology.click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await expect(technology).toBeFocused();
+  await page.locator(".advanced-filters summary").click();
+  await page
+    .getByRole("button", { name: "БИЗНЕС-НАПРАВЛЕНИЕ", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Поиск: БИЗНЕС-НАПРАВЛЕНИЕ" })
+    .fill("энергетика");
+  await expect(page.getByRole("option")).toHaveCount(2);
+  await page.locator("h1").click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+  for (const [title, heading] of [
+    ["Технологический радар", "Технологический радар"],
+    ["Матрица зрелости", "Матрица зрелости"],
+    ["Каталог", "Каталог сценариев"],
+  ]) {
+    await page
+      .locator(".scenario-tabs")
+      .getByRole("link", { name: title, exact: true })
+      .click();
+    await expect(page.locator("h1")).toHaveText(heading);
+    await expect(page).toHaveURL(/directionId=/);
+  }
+  expect(selected).toBeTruthy();
 });
