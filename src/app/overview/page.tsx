@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Radar, Workflow, Cpu, Layers3 } from "lucide-react";
 import { OverviewEnvironment } from "@/components/overview-environment";
 import styles from "./overview.module.css";
 export const metadata = { title: "Обзор платформы" };
@@ -8,25 +8,25 @@ const modules = [
     title: "Сценарии",
     text: "Каталог сценариев, технологический радар, матрица зрелости и карточки сценариев.",
     href: "/scenarios/catalog",
-    detail: "Исследовать возможности",
+    icon: Radar,
   },
   {
     title: "Бизнес и задачи",
     text: "Бизнес-ландшафт, классы задач и их связи с технологиями.",
     href: "/business",
-    detail: "Структура раздела",
+    icon: Workflow,
   },
   {
     title: "Технологии и рынок",
     text: "Технологический справочник, решения поставщиков и кейсы бенчмаркинга.",
     href: "/technologies",
-    detail: "Структура раздела",
+    icon: Cpu,
   },
   {
     title: "Внутренний портфель",
     text: "Внутренние проекты, продукты, сервисы и их взаимосвязи.",
     href: "/portfolio",
-    detail: "Структура раздела",
+    icon: Layers3,
   },
 ];
 export default function Overview() {
@@ -46,19 +46,14 @@ export default function Overview() {
           </Link>
         </div>
         <nav className={styles.modules} aria-label="Рабочие разделы">
-          {modules.map((m, i) => (
+          {modules.map((m) => (
             <Link key={m.href} href={m.href} className={styles.card}>
               <div className={styles.cardTop}>
-                <span
-                  className={styles.accent}
-                  data-index={i}
-                  aria-hidden="true"
-                />
+                <m.icon size={26} strokeWidth={1.4} aria-hidden="true" />
                 <ArrowUpRight size={19} aria-hidden="true" />
               </div>
               <h2>{m.title}</h2>
               <p>{m.text}</p>
-              <span className={styles.detail}>{m.detail}</span>
             </Link>
           ))}
         </nav>

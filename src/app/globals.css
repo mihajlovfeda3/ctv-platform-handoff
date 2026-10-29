@@ -2794,3 +2794,128 @@ tbody tr:hover {
     transition: none;
   }
 }
+/* 3.1: three restrained material depths, compositor-only motion. */
+.overview-fold {
+  animation: material-drift 14s cubic-bezier(0.45, 0, 0.55, 1) infinite
+    alternate;
+  will-change: transform;
+}
+@keyframes material-drift {
+  from {
+    transform: translate(-8%, -6%) rotate(22deg);
+  }
+  to {
+    transform: translate(6%, 7%) rotate(35deg);
+  }
+}
+.overview-illumination {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    transparent 35%,
+    #4089b52b 44%,
+    #81c8ed54 49%,
+    #2b72962b 55%,
+    transparent 64%
+  );
+  animation: illumination-flow 10s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+@keyframes illumination-flow {
+  from {
+    transform: translate(-12%, -4%) rotate(-5deg);
+    opacity: 0.35;
+  }
+  to {
+    transform: translate(10%, 6%) rotate(6deg);
+    opacity: 0.8;
+  }
+}
+.overview-light {
+  background: radial-gradient(ellipse at 78% 32%, #86c9e543, transparent 48%);
+  transition: transform 0.65s cubic-bezier(0.2, 0.65, 0.3, 1);
+}
+.overview-material::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #051424a6, #06172936 55%, transparent);
+}
+[data-overview-environment][data-paused="true"] .overview-illumination {
+  animation-play-state: paused;
+}
+/* Compact rail uses one 38px horizontal axis and equal 48px nav rows. */
+.nav-collapsed:not(.nav-peek) .sidebar {
+  padding: 64px 8px 20px;
+}
+.nav-collapsed:not(.nav-peek) .sidebar-toggle {
+  left: 16px;
+  right: auto;
+  top: 12px;
+  width: 44px;
+  height: 40px;
+}
+.app-shell .sidebar-toggle {
+  width: 40px;
+  height: 40px;
+  top: 12px;
+  right: 12px;
+  border: 0;
+  box-shadow: none;
+}
+.app-shell .sidebar-toggle:active {
+  background: #e4edf7;
+}
+.nav-collapsed:not(.nav-peek) .brand {
+  padding: 0 0 30px;
+  display: flex;
+  justify-content: center;
+}
+.nav-collapsed:not(.nav-peek) .brand-compact {
+  display: block;
+  width: 60px;
+  text-align: center;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 21px;
+  line-height: 28px;
+  letter-spacing: -1.1px;
+  color: #164c7e;
+  font-stretch: condensed;
+}
+.nav-collapsed:not(.nav-peek) .sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.nav-collapsed:not(.nav-peek) .nav-row {
+  width: 60px;
+  min-height: 48px;
+  flex-wrap: nowrap;
+}
+.nav-collapsed:not(.nav-peek) .nav-item {
+  height: 44px;
+  flex: 0 0 60px;
+  justify-content: center;
+  padding: 0;
+}
+.nav-collapsed:not(.nav-peek) .scenario-subnav,
+.nav-collapsed:not(.nav-peek) .submenu-toggle {
+  display: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .overview-fold,
+  .overview-illumination {
+    animation: none;
+    will-change: auto;
+  }
+  .overview-light {
+    transition: none;
+    transform: none;
+  }
+}
+[data-overview-environment][data-paused="true"] .overview-light {
+  transition: none;
+}

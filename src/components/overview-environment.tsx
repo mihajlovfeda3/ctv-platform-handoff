@@ -13,17 +13,18 @@ export function OverviewEnvironment({
       media = matchMedia("(prefers-reduced-motion: reduce)");
     let frame = 0;
     const move = (event: PointerEvent) => {
-      if (media.matches || event.pointerType !== "mouse") return;
+      if (document.hidden || media.matches || event.pointerType !== "mouse")
+        return;
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const r = node.getBoundingClientRect();
         node.style.setProperty(
           "--light-x",
-          `${((event.clientX - r.left) / r.width - 0.5) * 22}px`,
+          `${((event.clientX - r.left) / r.width - 0.5) * 84}px`,
         );
         node.style.setProperty(
           "--light-y",
-          `${((event.clientY - r.top) / r.height - 0.5) * 16}px`,
+          `${((event.clientY - r.top) / r.height - 0.5) * 56}px`,
         );
       });
     };
@@ -32,7 +33,11 @@ export function OverviewEnvironment({
       node.style.setProperty("--light-x", "0px");
       node.style.setProperty("--light-y", "0px");
     };
-    const visibility = () => (node.dataset.paused = String(document.hidden));
+    const visibility = () => {
+      node.dataset.paused = String(document.hidden);
+      if (document.hidden) reset();
+    };
+    visibility();
     node.addEventListener("pointermove", move);
     node.addEventListener("pointerleave", reset);
     media.addEventListener("change", reset);
@@ -49,6 +54,7 @@ export function OverviewEnvironment({
     <div ref={root} className={className} data-overview-environment>
       <div className="overview-material" aria-hidden="true">
         <div className="overview-fold" />
+        <div className="overview-illumination" />
         <div className="overview-light" />
       </div>
       {children}

@@ -42,7 +42,47 @@ test("overview composition, links, cursor light and reduced motion", async ({
         ),
     )
     .not.toBe("");
+  await expect(
+    page.getByText("Структура раздела", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Исследовать возможности", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('nav[aria-label="Рабочие разделы"] svg'),
+  ).toHaveCount(8);
+  const first = await page
+    .locator(".overview-illumination")
+    .evaluate((n) => getComputedStyle(n).transform);
+  await page.waitForTimeout(3200);
+  expect(
+    await page
+      .locator(".overview-illumination")
+      .evaluate((n) => getComputedStyle(n).transform),
+  ).not.toBe(first);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  for (const layer of [".overview-fold", ".overview-illumination"])
+    expect(
+      await page
+        .locator(layer)
+        .evaluate((n) => getComputedStyle(n).animationPlayState),
+    ).toBe("paused");
+  await page.evaluate(() => {
+    Reflect.deleteProperty(document, "hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
   await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await page
+      .locator(".overview-illumination")
+      .evaluate((n) => getComputedStyle(n).animationName),
+  ).toBe("none");
   expect(
     await page
       .locator(".overview-fold")
@@ -58,6 +98,34 @@ test("edge peek overlays content, preserves pin state, supports focus and does n
   await page
     .getByRole("button", { name: "Свернуть панель", exact: true })
     .click();
+  await expect(
+    page.locator(".scenario-subnav, .submenu-toggle, .subnav-compact"),
+  ).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page
+        .locator(
+          ".sidebar .brand-compact, .sidebar .sidebar-toggle, .sidebar .nav-item > svg",
+        )
+        .evaluateAll((nodes) =>
+          Math.max(
+            ...nodes.map((n) => {
+              const r = n.getBoundingClientRect();
+              return Math.abs(r.x + r.width / 2 - 38);
+            }),
+          ),
+        ),
+    )
+    .toBeLessThanOrEqual(1);
+  const rows = await page
+    .locator(".sidebar .nav-item > svg")
+    .evaluateAll((nodes) =>
+      nodes.map((n) => {
+        const r = n.getBoundingClientRect();
+        return r.y + r.height / 2;
+      }),
+    );
+  rows.slice(1).forEach((y, i) => expect(y - rows[i]).toBeCloseTo(48, 0));
   const main = page.locator(".main-shell");
   const before = (await main.boundingBox())!;
   await page.mouse.move(1, 350);
@@ -91,4 +159,32 @@ test("edge peek overlays content, preserves pin state, supports focus and does n
   await expect(
     page.getByRole("button", { name: "Свернуть панель", exact: true }),
   ).toBeVisible();
+});
+
+test("touch navigation expands manually and compact rail contains only primary destinations", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    hasTouch: true,
+    viewport: { width: 768, height: 900 },
+  });
+  const page = await context.newPage();
+  await page.goto(new URL("/overview", baseURL!).href);
+  await page
+    .getByRole("button", { name: "Свернуть панель", exact: true })
+    .tap();
+  await expect(page.locator(".scenario-subnav, .submenu-toggle")).toHaveCount(
+    0,
+  );
+  await page
+    .getByRole("button", { name: "Развернуть панель", exact: true })
+    .tap();
+  await expect(page.locator("#scenario-subnav")).toBeVisible();
+  await page
+    .locator("#scenario-subnav")
+    .getByRole("link", { name: "Каталог", exact: true })
+    .tap();
+  await expect(page).toHaveURL(/scenarios\/catalog/);
+  await context.close();
 });

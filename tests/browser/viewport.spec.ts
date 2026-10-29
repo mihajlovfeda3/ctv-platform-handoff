@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { sectorFootprints } from "../../src/domain/radar-labels";
 
+// Hundreds of real pointer moves plus card/matrix navigation run in this test.
+// Keep assertion timeouts strict; allow the complete gesture journey on busy CI hosts.
+test.setTimeout(90000);
+
 test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches", async ({
   page,
   browser,

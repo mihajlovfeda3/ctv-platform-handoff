@@ -130,6 +130,15 @@ test("sidebar separates disclosure from navigation and preserves query in collap
   await page.keyboard.press("Enter");
   await expect(nav).toBeVisible();
   await page.getByRole("button", { name: "Свернуть панель" }).click();
+  await expect(nav).toHaveCount(0);
+  await expect(page.locator(".submenu-toggle")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.locator(".sidebar").evaluate((n) => n.getBoundingClientRect().width),
+    )
+    .toBe(76);
+  await page.mouse.move(1, 350);
+  await expect(nav).toBeVisible();
   await nav.getByRole("link", { name: "Каталог", exact: true }).click();
   await expect(page).toHaveURL(/\/catalog\?/);
   for (const [key, value] of Object.entries({

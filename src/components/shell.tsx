@@ -16,8 +16,8 @@ import {
   Cpu,
   Layers3,
   ArrowUpRight,
-  PanelLeftClose,
-  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 const navigation = [
   { href: "/overview", label: "Обзор", icon: LayoutDashboard },
@@ -125,7 +125,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             collapsed={collapsed && !peek}
             preview={collapsed && peek}
             onToggle={toggle}
-            onEnter={clearTimer}
+            onEnter={() => {
+              if (peek) clearTimer();
+            }}
           />
         </Suspense>
       </div>
@@ -200,9 +202,9 @@ function Sidebar({
         }
       >
         {collapsed || preview ? (
-          <PanelLeftOpen size={17} />
+          <ChevronRight size={17} />
         ) : (
-          <PanelLeftClose size={17} />
+          <ChevronLeft size={17} />
         )}
       </button>
       <Link href="/overview" className="brand" aria-label="ЦТВ — на обзор">
@@ -232,7 +234,7 @@ function Sidebar({
               <Icon size={19} />
               <span className="nav-label-text">{label}</span>
             </Link>
-            {href === "/scenarios" && (
+            {href === "/scenarios" && !collapsed && (
               <button
                 className="submenu-toggle"
                 title={expanded ? "Скрыть подразделы" : "Показать подразделы"}
@@ -248,7 +250,7 @@ function Sidebar({
                 {expanded ? "⌃" : "⌄"}
               </button>
             )}
-            {href === "/scenarios" && (
+            {href === "/scenarios" && !collapsed && (
               <>
                 {" "}
                 <div
@@ -269,13 +271,6 @@ function Sidebar({
                         title={label}
                       >
                         <span className="subnav-full">{label}</span>
-                        <span className="subnav-compact" aria-hidden="true">
-                          {key === "catalog"
-                            ? "Кат"
-                            : key === "radar"
-                              ? "Рад"
-                              : "Мат"}
-                        </span>
                       </Link>
                     );
                   })}
