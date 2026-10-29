@@ -50,12 +50,12 @@ test("hover, double click pin/unpin and keyboard navigation preserve link semant
     .getByRole("navigation", { name: "Основная навигация" })
     .getByRole("link", { name: "Сценарии", exact: true });
   const sub = page.locator("#scenario-subnav");
-  await expect(sub).toHaveCount(0);
+  await expect(sub).toBeHidden();
   await expect(page.locator(".submenu-toggle")).toHaveCount(0);
   await group.hover();
   await expect(sub).toBeVisible();
   await page.mouse.move(700, 100);
-  await expect(sub).toHaveCount(0);
+  await expect(sub).toBeHidden();
   await group.dblclick();
   await page.mouse.move(700, 100);
   await page.waitForTimeout(500);
@@ -63,7 +63,7 @@ test("hover, double click pin/unpin and keyboard navigation preserve link semant
   await expect(sub).toBeVisible();
   await group.dblclick();
   await page.mouse.move(700, 100);
-  await expect(sub).toHaveCount(0);
+  await expect(sub).toBeHidden();
   await group.focus();
   await group.press(" ");
   await page.getByRole("link", { name: "Открыть каталог сценариев" }).focus();
@@ -71,7 +71,7 @@ test("hover, double click pin/unpin and keyboard navigation preserve link semant
   await expect(sub).toBeVisible();
   await group.focus();
   await group.press("ArrowLeft");
-  await expect(sub).toHaveCount(0);
+  await expect(sub).toBeHidden();
   await group.click();
   await expect(page).toHaveURL(/scenarios\/radar/);
   await group.hover();

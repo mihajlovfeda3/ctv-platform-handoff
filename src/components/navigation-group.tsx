@@ -51,10 +51,13 @@ export function NavigationGroup({
   const leave = () => {
     if (close.current) clearTimeout(close.current);
     close.current = setTimeout(() => {
-      if (!(
-        document.activeElement?.matches(":focus-visible") &&
-        root.current?.contains(document.activeElement)
-      ))
+      if (
+        !root.current?.matches(":hover") &&
+        !(
+          document.activeElement?.matches(":focus-visible") &&
+          root.current?.contains(document.activeElement)
+        )
+      )
         setHover(false);
     }, 220);
   };
@@ -146,24 +149,33 @@ export function NavigationGroup({
         <Icon size={19} />
         <span className="nav-label-text">{label}</span>
       </Link>
-      {open && (
-        <div id={id} className="scenario-subnav">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              onClick={() => {
-                if (click.current) clearTimeout(click.current);
-              }}
-              href={item.href}
-              prefetch={false}
-              scroll={false}
-              aria-label={item.label}
-              title={item.label}
-              aria-current={item.active ? "page" : undefined}
-            >
-              <span className="subnav-full">{item.label}</span>
-            </Link>
-          ))}
+      {available && (
+        <div
+          className="nav-disclosure"
+          data-open={open}
+          aria-hidden={!open}
+          inert={!open}
+        >
+          <div className="nav-disclosure-clip">
+            <div id={id} className="scenario-subnav">
+              {items.map((item) => (
+                <Link
+                  key={item.href}
+                  onClick={() => {
+                    if (click.current) clearTimeout(click.current);
+                  }}
+                  href={item.href}
+                  prefetch={false}
+                  scroll={false}
+                  aria-label={item.label}
+                  title={item.label}
+                  aria-current={item.active ? "page" : undefined}
+                >
+                  <span className="subnav-full">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

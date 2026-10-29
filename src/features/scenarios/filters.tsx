@@ -128,7 +128,7 @@ export function ScenarioFilters({
     );
   }
   const range = (
-    prefix: "maturity" | "readiness",
+    prefix: "maturity" | "readiness" | "impact",
     label: string,
     max: number,
   ) => {
@@ -321,8 +321,10 @@ export function ScenarioFilters({
         </>
       )}
       {Object.entries(errors)
-        .filter(
-          ([key]) => key.startsWith("maturity") || key.startsWith("readiness"),
+        .filter(([key]) =>
+          ["maturity", "readiness", "impact"].some((prefix) =>
+            key.startsWith(prefix),
+          ),
         )
         .map(([key, message]) => (
           <small
@@ -409,16 +411,7 @@ export function ScenarioFilters({
             references.groups,
           )}
           {field("impact", "Влияние: точное значение", options(3))}
-          {(["impact"] as const).flatMap((prefix, i) =>
-            (["Min", "Max"] as const).map((bound) =>
-              field(
-                `${prefix}${bound}`,
-                `${["Влияние"][i]} ${bound === "Min" ? "от" : "до"}`,
-                options([3][i]),
-                "Не ограничено",
-              ),
-            ),
-          )}
+          {range("impact", "Влияние на бизнес-цели", 3)}
           <label>
             <span>Организационный контекст</span>
             <input

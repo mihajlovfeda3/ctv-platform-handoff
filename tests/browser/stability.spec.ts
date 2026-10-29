@@ -91,22 +91,19 @@ test("all exact scores clear ranges, invalid bounds stay inline, deep links rema
 }) => {
   await page.goto("/scenarios/catalog");
   await page.locator(".advanced-filters summary").click();
-  for (const [prefix, , value, max] of [["impact", "Влияние", "3", "2"]]) {
-    await page.getByRole("button", { name: "Влияние до", exact: true }).click();
-    await page.getByRole("option", { name: max, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`${prefix}Max=${max}`));
-    await settled(page);
-    await page
-      .getByRole("button", { name: "Влияние: точное значение", exact: true })
-      .click();
-    await page.getByRole("option", { name: value, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`${prefix}=${value}`));
-    await settled(page);
-    expect(new URL(page.url()).searchParams.has(`${prefix}Max`)).toBe(false);
-    await expect(
-      page.getByRole("button", { name: "Влияние до", exact: true }),
-    ).toHaveText("Не ограничено");
-  }
+  await page.locator("[name=impactMax]").focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(page).toHaveURL(/impactMax=2/);
+  await settled(page);
+  await page
+    .getByRole("button", { name: "Влияние: точное значение", exact: true })
+    .click();
+  await page.getByRole("option", { name: "3", exact: true }).click();
+  await expect(page).toHaveURL(/impact=3/);
+  await settled(page);
+  expect(new URL(page.url()).searchParams.has("impactMax")).toBe(false);
+  await expect(page.locator("[name=impactMax]")).toHaveValue("3");
+  await expect(page.locator("[name=impactMin]")).toHaveValue("3");
   await page.goto("/scenarios/catalog?readinessMin=6&readinessMax=4");
   await expect(page.locator("#error-readinessMax")).toBeVisible();
   await expect(
