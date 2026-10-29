@@ -45,7 +45,9 @@ export async function Workspace({
   ]);
   const related = item ? await relatedObjects(item.scenario.id) : null;
   return (
-    <div className="page scenarios-page">
+    <div
+      className={`page scenarios-page ${view === "catalog" ? "catalog-page" : ""}`}
+    >
       <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
         <h1>Сценарии применения ЦТ</h1>
@@ -69,7 +71,11 @@ export async function Workspace({
       />
       <div className="scenario-workspace">
         {view === "catalog" ? (
-          <ScenarioCatalog result={result} query={query} />
+          <ScenarioCatalog
+            result={result}
+            query={query}
+            businessDirections={references.businessDirections}
+          />
         ) : (
           <>
             <section className="surface analytical-stage">
@@ -142,6 +148,7 @@ export async function Workspace({
             item={item}
             related={related}
             context={query.context}
+            variant={view === "catalog" ? "catalog" : undefined}
             closeHref={workspaceHref(view, query, { selected: undefined })}
             fullHref={cardHref(item.scenario.id, view, query)}
           />

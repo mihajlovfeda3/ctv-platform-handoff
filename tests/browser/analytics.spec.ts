@@ -4,6 +4,7 @@ test("range handles clamp, preserve legacy links and include unknown at defaults
   request,
 }) => {
   await page.goto("/scenarios/catalog?readiness=7");
+  await page.locator(".advanced-filters summary").click();
   await expect(page.locator("[name=readinessMin]")).toBeEnabled();
   await expect(page.locator("[name=readinessMin]")).toHaveValue("7");
   await page.locator("[name=readinessMin]").focus();

@@ -28,6 +28,7 @@ test("database classifiers filter and survive all workspace routes", async ({
   }
   expect(directionId).toBeTruthy();
   await page.goto("/scenarios/catalog");
+  await page.locator(".advanced-filters summary").click();
   await expect(page.locator("[name=businessDirectionId]")).toBeVisible();
   await page
     .locator("[name=businessDirectionId]")
@@ -76,7 +77,8 @@ test("database classifiers filter and survive all workspace routes", async ({
   }
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name === "1440") {
     await page.goto("/scenarios/catalog");
-    await expect(page.locator(".catalog tbody tr")).toHaveCount(12);
+    await page.locator(".advanced-filters summary").click();
+    await expect(page.locator(".catalog tbody tr")).toHaveCount(25);
     for (const name of ["blockId", "businessDirectionId", "directionId"]) {
       const select = page.locator(`[name=${name}]`);
       // Native OS popups are outside page screenshots. Show the same DB-backed

@@ -38,6 +38,7 @@ export function filterErrors(draft: FilterDraft) {
 }
 /** Only contradictory bounds are recoverable in the workspace. HTTP API stays strict. */
 export function workspaceQuery(raw: Record<string, unknown>) {
+  raw = { ...raw, pageSize: raw.pageSize ?? 25 };
   const strict = scenarioQuery.safeParse(raw);
   if (strict.success) return { query: strict.data, invalidDraft: undefined };
   if (

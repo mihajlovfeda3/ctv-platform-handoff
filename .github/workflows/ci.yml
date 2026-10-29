@@ -65,5 +65,5 @@ jobs:
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium
 
-      - name: Navigation and overview checks (four viewports)
-        run: npx playwright test tests/browser/navigation-32.spec.ts
+      - name: Catalog UX checks (desktop and narrow viewports)
+        run: npx playwright test tests/browser/catalog-33.spec.ts --project=1440 --project=1920 --project=768

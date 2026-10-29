@@ -131,9 +131,50 @@ export function ScenarioFilters({
       />
     );
   };
+  const chips: { label: string; keys: string[] }[] = [];
+  if (query.q) chips.push({ label: `Поиск: ${query.q}`, keys: ["q"] });
+  for (const [key, label, items] of [
+    ["blockId", "Блок", references.blocks],
+    ["businessDirectionId", "Бизнес", references.businessDirections],
+    ["directionId", "Технология", references.directions],
+    ["functionalGroupId", "Группа", references.groups],
+    ["businessNodeId", "Процесс", references.business],
+  ] as const)
+    if (query[key])
+      chips.push({
+        label: `${label}: ${items.find((i) => i.id === query[key])?.name ?? query[key]}`,
+        keys: [key],
+      });
+  if (query.implementation)
+    chips.push({
+      label:
+        query.implementation === "yes"
+          ? "Реализуется"
+          : query.implementation === "no"
+            ? "Не реализуется"
+            : "Статус неизвестен",
+      keys: ["implementation"],
+    });
+  for (const [key, label, max] of [
+    ["maturity", "РЗ", 5],
+    ["readiness", "ОГ", 7],
+    ["impact", "Влияние", 3],
+  ] as const) {
+    if (
+      query[key] !== undefined ||
+      query[`${key}Min`] !== undefined ||
+      query[`${key}Max`] !== undefined
+    )
+      chips.push({
+        label: `${label}: ${query[key] ?? query[`${key}Min`] ?? 1}–${query[key] ?? query[`${key}Max`] ?? max}`,
+        keys: [key, `${key}Min`, `${key}Max`],
+      });
+  }
+  if (query.context !== "synthetic-lab")
+    chips.push({ label: `Контекст: ${query.context}`, keys: ["context"] });
   return (
     <form
-      className="surface shared-filters"
+      className={`surface shared-filters ${view === "catalog" ? "catalog-filters" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
         const result = scenarioQuery.safeParse(draft);
@@ -149,60 +190,113 @@ export function ScenarioFilters({
       aria-label="Общие фильтры сценариев"
       aria-busy={pending || !ready}
     >
-      <div className="shared-filter-row">
-        <label className="scenario-search">
-          <span>ПОИСК</span>
-          <input
-            disabled={!ready}
-            name="q"
-            value={draft.q ?? ""}
-            onChange={() => {}}
-            maxLength={200}
-            placeholder="Название, описание или ID"
-          />
-        </label>
-        {field(
-          "blockId",
-          "БЛОК „ГАЗПРОМ НЕФТЬ“",
-          references.blocks,
-          "Все блоки",
-        )}
-        {field(
-          "businessDirectionId",
-          "БИЗНЕС-НАПРАВЛЕНИЕ",
-          references.businessDirections,
-          "Все направления",
-        )}
-        {field(
-          "directionId",
-          "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
-          references.directions,
-          "Все направления",
-        )}
-        {range("maturity", "Рыночная зрелость (РЗ)", 5)}
-        {range("readiness", "Организационная готовность (ОГ)", 7)}
-        {field(
-          "implementation",
-          "РЕАЛИЗАЦИЯ",
-          [
-            { id: "yes", name: "Реализуется" },
-            { id: "no", name: "Не реализуется" },
-            { id: "unknown", name: "Неизвестно" },
-          ],
-          "Любой статус",
-        )}
-        <CameraLink
-          replace
-          scroll={false}
-          className="button"
-          href={workspaceHref(view, {
-            context: query.context,
-            mode: query.mode,
-          })}
-        >
-          Сбросить
-        </CameraLink>
-      </div>
+      {view === "catalog" ? (
+        <div className="shared-filter-row">
+          <label className="scenario-search">
+            <span>ПОИСК</span>
+            <input
+              disabled={!ready}
+              name="q"
+              value={draft.q ?? ""}
+              onChange={() => {}}
+              maxLength={200}
+              placeholder="Название, описание или ID"
+            />
+          </label>
+          {field(
+            "directionId",
+            "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
+            references.directions,
+            "Все направления",
+          )}
+          {field(
+            "implementation",
+            "РЕАЛИЗАЦИЯ",
+            [
+              { id: "yes", name: "Реализуется" },
+              { id: "no", name: "Не реализуется" },
+              { id: "unknown", name: "Неизвестно" },
+            ],
+            "Любой статус",
+          )}
+          <CameraLink
+            replace
+            scroll={false}
+            className="button"
+            href={workspaceHref(view, {
+              context: query.context,
+              mode: query.mode,
+              ...(view === "catalog"
+                ? {
+                    selected: query.selected,
+                    sort: query.sort,
+                    order: query.order,
+                    pageSize: query.pageSize,
+                  }
+                : {}),
+            })}
+          >
+            Сбросить
+          </CameraLink>
+        </div>
+      ) : (
+        <>
+          <div className="shared-filter-row">
+            <label className="scenario-search">
+              <span>ПОИСК</span>
+              <input
+                disabled={!ready}
+                name="q"
+                value={draft.q ?? ""}
+                onChange={() => {}}
+                maxLength={200}
+                placeholder="Название, описание или ID"
+              />
+            </label>
+            {field(
+              "blockId",
+              "БЛОК „ГАЗПРОМ НЕФТЬ“",
+              references.blocks,
+              "Все блоки",
+            )}
+            {field(
+              "businessDirectionId",
+              "БИЗНЕС-НАПРАВЛЕНИЕ",
+              references.businessDirections,
+              "Все направления",
+            )}
+            {field(
+              "directionId",
+              "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ",
+              references.directions,
+              "Все направления",
+            )}
+            {range("maturity", "Рыночная зрелость (РЗ)", 5)}
+            {range("readiness", "Организационная готовность (ОГ)", 7)}
+            {field(
+              "implementation",
+              "РЕАЛИЗАЦИЯ",
+              [
+                { id: "yes", name: "Реализуется" },
+                { id: "no", name: "Не реализуется" },
+                { id: "unknown", name: "Неизвестно" },
+              ],
+              "Любой статус",
+            )}
+            <CameraLink
+              replace
+              scroll={false}
+              className="button"
+              href={workspaceHref(view, {
+                context: query.context,
+                mode: query.mode,
+              })}
+            >
+              Сбросить
+            </CameraLink>
+          </div>
+        </>
+      )}
       {Object.entries(errors)
         .filter(
           ([key]) => key.startsWith("maturity") || key.startsWith("readiness"),
@@ -217,6 +311,29 @@ export function ScenarioFilters({
             {message}
           </small>
         ))}
+      {view === "catalog" && chips.length > 0 && (
+        <div className="filter-chips" aria-label="Активные ограничения">
+          {chips.map((chip) => (
+            <CameraLink
+              key={chip.keys[0]}
+              replace
+              scroll={false}
+              title={chip.label}
+              aria-label={`Снять фильтр: ${chip.label}`}
+              href={workspaceHref(view, query, {
+                ...Object.fromEntries(chip.keys.map((key) => [key, undefined])),
+                page: 1,
+                ...(chip.keys[0] === "context"
+                  ? { context: "synthetic-lab" }
+                  : {}),
+              })}
+            >
+              <span>{chip.label}</span>
+              <span aria-hidden="true">×</span>
+            </CameraLink>
+          ))}
+        </div>
+      )}
       <details
         className="advanced-filters"
         open={Object.keys(errors).length > 0 ? true : undefined}
@@ -228,6 +345,25 @@ export function ScenarioFilters({
           </span>
         </summary>
         <div className="advanced-grid">
+          {view === "catalog" && (
+            <>
+              {field(
+                "blockId",
+                "БЛОК „ГАЗПРОМ НЕФТЬ“",
+                references.blocks,
+                "Все блоки",
+              )}
+              {field(
+                "businessDirectionId",
+                "БИЗНЕС-НАПРАВЛЕНИЕ",
+                references.businessDirections,
+                "Все направления",
+              )}
+              {range("maturity", "Рыночная зрелость (РЗ)", 5)}
+              {range("readiness", "Организационная готовность (ОГ)", 7)}
+            </>
+          )}
+
           <label>
             <span>Бизнес-процесс / этап</span>
             <select disabled aria-label="Бизнес-процесс / этап">
