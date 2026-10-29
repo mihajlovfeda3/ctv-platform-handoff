@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowUpRight, Radar, Workflow, Cpu, Layers3 } from "lucide-react";
+import { ArrowUpRight, Workflow, Cpu, Layers3 } from "lucide-react";
 import { OverviewEnvironment } from "@/components/overview-environment";
+import { ScenariosIcon } from "@/components/scenarios-icon";
 import styles from "./overview.module.css";
 export const metadata = { title: "Обзор платформы" };
 const modules = [
@@ -8,7 +9,7 @@ const modules = [
     title: "Сценарии",
     text: "Каталог сценариев, технологический радар, матрица зрелости и карточки сценариев.",
     href: "/scenarios/catalog",
-    icon: Radar,
+    icon: ScenariosIcon,
   },
   {
     title: "Бизнес и задачи",

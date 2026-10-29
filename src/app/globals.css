@@ -2919,3 +2919,29 @@ tbody tr:hover {
 [data-overview-environment][data-paused="true"] .overview-light {
   transition: none;
 }
+/* 3.2: overview starts at the top; help remains available in the compact rail. */
+.platform-help {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: help;
+  color: #6c8197;
+}
+.app-shell .sidebar-bottom {
+  display: block;
+}
+.nav-collapsed:not(.nav-peek) .sidebar-bottom {
+  padding: 20px 0 0;
+}
+.nav-collapsed:not(.nav-peek) .platform-help {
+  width: 60px;
+  padding: 10px 0;
+  justify-content: center;
+}
+.nav-collapsed:not(.nav-peek) .platform-help > span {
+  display: none;
+}
+.platform-help:focus-visible {
+  outline: 2px solid var(--blue);
+  border-radius: 5px;
+}

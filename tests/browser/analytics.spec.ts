@@ -106,6 +106,10 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   await expect(page).toHaveURL(/maturityMin=2/);
   expect(new URL(page.url()).searchParams.has("maturity")).toBe(false);
   await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
+    .hover();
+  await page
     .locator("#scenario-subnav")
     .getByRole("link", { name: "Матрица зрелости" })
     .click();

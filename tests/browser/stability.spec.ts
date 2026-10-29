@@ -120,15 +120,11 @@ test("sidebar separates disclosure from navigation and preserves query in collap
   const nav = page.locator("#scenario-subnav");
   const initial = page.url();
   await page
-    .getByRole("button", { name: "Скрыть подразделы сценариев" })
-    .click();
-  expect(page.url()).toBe(initial);
-  await expect(nav).toBeHidden();
-  await page
-    .getByRole("button", { name: "Показать подразделы сценариев" })
-    .focus();
-  await page.keyboard.press("Enter");
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
+    .hover();
   await expect(nav).toBeVisible();
+  expect(page.url()).toBe(initial);
   await page.getByRole("button", { name: "Свернуть панель" }).click();
   await expect(nav).toHaveCount(0);
   await expect(page.locator(".submenu-toggle")).toHaveCount(0);
@@ -138,6 +134,11 @@ test("sidebar separates disclosure from navigation and preserves query in collap
     )
     .toBe(76);
   await page.mouse.move(1, 350);
+  await expect(page.locator(".nav-peek")).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
+    .hover();
   await expect(nav).toBeVisible();
   await nav.getByRole("link", { name: "Каталог", exact: true }).click();
   await expect(page).toHaveURL(/\/catalog\?/);

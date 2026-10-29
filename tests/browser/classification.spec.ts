@@ -58,6 +58,11 @@ test("database classifiers filter and survive all workspace routes", async ({
   const selected = new URL(page.url()).searchParams.get("selected");
   for (const view of ["radar", "maturity", "catalog"]) {
     await page
+      .getByRole("navigation", { name: "Основная навигация" })
+      .getByRole("link", { name: "Сценарии", exact: true })
+      .hover();
+
+    await page
       .locator(`#scenario-subnav a[href*="/scenarios/${view}?"]`)
       .click();
     await expect(page).toHaveURL(new RegExp(`/scenarios/${view}\\?`));

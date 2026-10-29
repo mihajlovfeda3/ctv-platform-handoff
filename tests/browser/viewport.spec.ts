@@ -300,6 +300,10 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   await expect(page).toHaveURL(/\/scenarios\/radar\?/);
   expect(Number(new URL(page.url()).searchParams.get("zoom"))).toBeCloseTo(3);
   await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
+    .hover();
+  await page
     .locator("#scenario-subnav")
     .getByRole("link", { name: "Матрица зрелости" })
     .click();

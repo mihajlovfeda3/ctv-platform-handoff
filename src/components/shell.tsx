@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { ScenariosIcon } from "./scenarios-icon";
+import { NavigationGroup } from "./navigation-group";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { workspaceQuery } from "@/features/scenarios/filter-state";
@@ -11,17 +13,16 @@ import {
 } from "@/features/scenarios/navigation";
 import {
   LayoutDashboard,
-  ScanLine,
   Workflow,
   Cpu,
   Layers3,
-  ArrowUpRight,
+  CircleHelp,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 const navigation = [
   { href: "/overview", label: "Обзор", icon: LayoutDashboard },
-  { href: "/scenarios", label: "Сценарии", icon: ScanLine },
+  { href: "/scenarios", label: "Сценарии", icon: ScenariosIcon },
   { href: "/business", label: "Бизнес и задачи", icon: Workflow },
   { href: "/technologies", label: "Технологии и рынок", icon: Cpu },
   { href: "/portfolio", label: "Внутренний портфель", icon: Layers3 },
@@ -132,12 +133,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </Suspense>
       </div>
       <div className="main-shell">
-        <header className="topbar">
-          <div className="breadcrumb">
-            Рабочее пространство <span>/</span>{" "}
-            <strong>{active?.label ?? "Сценарии"}</strong>
-          </div>
-        </header>
+        {pathname !== "/overview" && (
+          <header className="topbar">
+            <div className="breadcrumb">
+              Рабочее пространство <span>/</span>{" "}
+              <strong>{active?.label ?? "Сценарии"}</strong>
+            </div>
+          </header>
+        )}
         <main id="main-content">{children}</main>
         <footer className="footer">
           <span>
@@ -162,8 +165,7 @@ function Sidebar({
   onEnter: () => void;
 }) {
   const pathname = usePathname(),
-    params = useSearchParams(),
-    [expanded, setExpanded] = useState(true);
+    params = useSearchParams();
   const result = workspaceQuery(Object.fromEntries(params));
   const query = result?.query ?? scenarioQuery.parse({});
   const activeView =
@@ -218,72 +220,39 @@ function Sidebar({
         <span className="brand-compact">ЦТВ</span>
       </Link>
       <nav aria-label="Основная навигация">
-        {navigation.map(({ href, label, icon: Icon }) => (
-          <div key={href} className="nav-row">
-            <Link
-              href={
-                href === "/scenarios" ? workspaceHref("radar", query) : href
-              }
-              prefetch={false}
-              scroll={false}
-              className={`nav-item ${pathname.startsWith(href) ? "active" : ""}`}
-              aria-label={label}
-              title={label}
-              aria-current={pathname === href ? "page" : undefined}
-            >
-              <Icon size={19} />
-              <span className="nav-label-text">{label}</span>
-            </Link>
-            {href === "/scenarios" && !collapsed && (
-              <button
-                className="submenu-toggle"
-                title={expanded ? "Скрыть подразделы" : "Показать подразделы"}
-                aria-label={
-                  expanded
-                    ? "Скрыть подразделы сценариев"
-                    : "Показать подразделы сценариев"
-                }
-                aria-expanded={expanded}
-                aria-controls="scenario-subnav"
-                onClick={() => setExpanded((v) => !v)}
-              >
-                {expanded ? "⌃" : "⌄"}
-              </button>
-            )}
-            {href === "/scenarios" && !collapsed && (
-              <>
-                {" "}
-                <div
-                  id="scenario-subnav"
-                  hidden={!expanded}
-                  className="scenario-subnav"
-                >
-                  {(["catalog", "radar", "maturity"] as const).map((key) => {
-                    const label = views[key];
-                    return (
-                      <Link
-                        key={key}
-                        href={workspaceHref(key as ScenarioView, query)}
-                        prefetch={false}
-                        scroll={false}
-                        aria-current={activeView === key ? "page" : undefined}
-                        aria-label={label}
-                        title={label}
-                      >
-                        <span className="subnav-full">{label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>{" "}
-              </>
-            )}
-          </div>
+        {navigation.map(({ href, label, icon }) => (
+          <NavigationGroup
+            key={href}
+            href={href === "/scenarios" ? workspaceHref("radar", query) : href}
+            label={label}
+            icon={icon}
+            active={pathname.startsWith(href)}
+            compact={collapsed}
+            id={href === "/scenarios" ? "scenario-subnav" : undefined}
+            items={
+              href === "/scenarios"
+                ? (["catalog", "radar", "maturity"] as const).map((key) => ({
+                    href: workspaceHref(key as ScenarioView, query),
+                    label: views[key],
+                    active: activeView === key,
+                  }))
+                : undefined
+            }
+          />
         ))}
       </nav>
       <div className="sidebar-bottom">
-        <Link href="/overview" className="help-link">
-          О платформе <ArrowUpRight size={14} />
-        </Link>
+        <span
+          className="help-link platform-help"
+          role="link"
+          aria-disabled="true"
+          tabIndex={0}
+          aria-label="О платформе — информационная страница пока недоступна"
+          title="О платформе — информационная страница пока недоступна"
+        >
+          <CircleHelp size={19} aria-hidden="true" />
+          <span>О платформе</span>
+        </span>
       </div>
     </aside>
   );

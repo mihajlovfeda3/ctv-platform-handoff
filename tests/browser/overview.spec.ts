@@ -139,6 +139,10 @@ test("edge peek overlays content, preserves pin state, supports focus and does n
   await page.mouse.move(120, 350);
   await page.waitForTimeout(300);
   await expect(page.locator(".nav-peek")).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
+    .hover();
   await expect(page.locator("#scenario-subnav .subnav-full")).toHaveText([
     "Каталог",
     "Технологический радар",
@@ -179,6 +183,10 @@ test("touch navigation expands manually and compact rail contains only primary d
   );
   await page
     .getByRole("button", { name: "Развернуть панель", exact: true })
+    .tap();
+  await page
+    .getByRole("navigation", { name: "Основная навигация" })
+    .getByRole("link", { name: "Сценарии", exact: true })
     .tap();
   await expect(page.locator("#scenario-subnav")).toBeVisible();
   await page
