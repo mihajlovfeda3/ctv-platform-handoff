@@ -17,7 +17,6 @@ import {
   Layers3,
   ArrowUpRight,
   CircleHelp,
-  FlaskConical,
 } from "lucide-react";
 const navigation = [
   { href: "/overview", label: "Обзор", icon: LayoutDashboard },
@@ -68,17 +67,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             Рабочее пространство <span>/</span>{" "}
             <strong>{active?.label ?? "Сценарии"}</strong>
           </div>
-          <div className="topbar-right">
-            <span className="iteration">
-              <span className="live-dot" /> Синтетическая среда
-            </span>
-            <span
-              className="avatar"
-              title="Локальная среда, авторизация не подключена"
-            >
-              ЦТ
-            </span>
-          </div>
         </header>
         <main id="main-content">{children}</main>
         <footer className="footer">
@@ -86,7 +74,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             ЦТВ Platform <span className="footer-sep">/</span> Пространство
             технологических возможностей
           </span>
-          <span>Все тестовые сведения вымышлены</span>
         </footer>
       </div>
     </div>
@@ -203,14 +190,6 @@ function Sidebar({
         ))}
       </nav>
       <div className="sidebar-bottom">
-        <div className="environment">
-          <FlaskConical size={17} />
-          <div>
-            <strong>Среда разработки</strong>
-            <span>Синтетические данные</span>
-          </div>
-          <span className="live-dot" />
-        </div>
         <Link href="/overview#foundation" className="help-link">
           <CircleHelp size={17} /> О платформе <ArrowUpRight size={14} />
         </Link>

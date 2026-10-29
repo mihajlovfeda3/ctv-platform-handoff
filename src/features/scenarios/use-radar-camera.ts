@@ -81,18 +81,53 @@ export function useRadarCamera(view: string) {
         z = Math.max(1, Math.min(8, old.z * factor));
       save({ z, x: (old.x * z) / old.z, y: (old.y * z) / old.z });
     },
+    onKeyDown: (e: React.KeyboardEvent<SVGSVGElement>) => {
+      // Marker Enter/Space and arrow navigation elsewhere keep their meaning.
+      if (e.target !== e.currentTarget || e.ctrlKey || e.metaKey || e.altKey)
+        return;
+      const old = current.current;
+      if (["+", "=", "-", "_"].includes(e.key)) {
+        e.preventDefault();
+        const z = Math.max(
+          1,
+          Math.min(8, old.z * (["+", "="].includes(e.key) ? 1.25 : 0.8)),
+        );
+        save({ z, x: (old.x * z) / old.z, y: (old.y * z) / old.z });
+      } else if (e.key === "0" || e.key === "Home") {
+        e.preventDefault();
+        save({ z: 1, x: 0, y: 0 });
+      } else if (e.key.startsWith("Arrow")) {
+        e.preventDefault();
+        save({
+          ...old,
+          x:
+            old.x +
+            (e.key === "ArrowLeft" ? -40 : e.key === "ArrowRight" ? 40 : 0),
+          y:
+            old.y +
+            (e.key === "ArrowUp" ? -40 : e.key === "ArrowDown" ? 40 : 0),
+        });
+      }
+    },
     onPointerDown: (e: React.PointerEvent<SVGSVGElement>) => {
-      if ((e.target as Element).closest(".radar-mark")) return;
+      if (e.button !== 0) return;
       drag.current = { x: e.clientX, y: e.clientY, camera: current.current };
       moved.current = false;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      // Preserve a marker's click when stationary; dense clouds must still be
+      // draggable. Capture a marker-origin gesture only after its drag threshold.
+      if (!(e.target as Element).closest(".radar-mark"))
+        e.currentTarget.setPointerCapture(e.pointerId);
     },
     onPointerMove: (e: React.PointerEvent<SVGSVGElement>) => {
       const origin = drag.current;
       if (!origin) return;
       const dx = e.clientX - origin.x,
         dy = e.clientY - origin.y;
-      if (Math.hypot(dx, dy) > 3) moved.current = true;
+      if (Math.hypot(dx, dy) > 3) {
+        moved.current = true;
+        if (!e.currentTarget.hasPointerCapture(e.pointerId))
+          e.currentTarget.setPointerCapture(e.pointerId);
+      }
       const next = clampCamera(
         { ...origin.camera, x: origin.camera.x + dx, y: origin.camera.y + dy },
         viewport,

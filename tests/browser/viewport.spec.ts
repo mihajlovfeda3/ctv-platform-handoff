@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { sectorFootprints } from "../../src/domain/radar-labels";
+
 test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches", async ({
   page,
+  browser,
 }, info) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -17,7 +20,13 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   await svg.scrollIntoViewIfNeeded();
   const requests: string[] = [];
   page.on("request", (r) => {
-    if (r.url().includes("_rsc") || r.url().includes("/api/scenarios"))
+    const url = new URL(r.url());
+    // Unrelated navigation prefetch (e.g. Overview) is not an analytics reload.
+    if (
+      (url.pathname.startsWith("/scenarios/") &&
+        url.searchParams.has("_rsc")) ||
+      url.pathname.startsWith("/api/scenarios")
+    )
       requests.push(r.url());
   });
   const initialRequests = requests.length;
@@ -34,15 +43,86 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   expect(dimensions.vw).toBeCloseTo(dimensions.w, 1);
   expect(dimensions.vh).toBeCloseTo(dimensions.h, 1);
   async function capture(path: string) {
+    await page.mouse.move(200, 10);
     await page.evaluate(() => {
       (document.activeElement as HTMLElement)?.blur();
+      window.getSelection()?.removeAllRanges();
       window.scrollTo({ top: 0, behavior: "instant" });
     });
     await page.screenshot({ path, fullPage: true });
   }
 
-  for (const scale of ["1", "3", "8"]) {
-    await page.getByLabel("Установить масштаб").selectOption(scale);
+  async function setZoom(scale: number) {
+    await svg.evaluate((node, target) => {
+      const current = Number(
+        node.querySelector("[data-testid=camera]")!.getAttribute("data-zoom"),
+      );
+      const b = node.getBoundingClientRect();
+      node.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaY: Math.log(current / target) / 0.002,
+          clientX: b.left + b.width / 2,
+          clientY: b.top + b.height / 2,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, scale);
+    await expect
+      .poll(async () =>
+        Number(
+          await page.locator("[data-testid=camera]").getAttribute("data-zoom"),
+        ),
+      )
+      .toBeCloseTo(scale, 5);
+  }
+  await expect(page.locator(".direction-label")).toHaveCount(8);
+  await expect(
+    page.locator(".radar-tools select, .radar-tools output"),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Приблизить", { exact: true })).toBeHidden();
+  await expect(page.locator(".selection-count, .topbar-right")).toHaveCount(0);
+  await expect(
+    page.getByText("Исследуйте технологии в контексте бизнес-задач"),
+  ).toHaveCount(0);
+  await expect(page.locator(".analytics-legend")).not.toContainText("Без ОГ");
+  await page.getByText("О выборке", { exact: true }).click();
+  await expect(page.locator(".sample-details")).toContainText("синтетические");
+  await page.getByText("О выборке", { exact: true }).click();
+  await page.locator(".direction-label").first().hover();
+  await expect(
+    page.locator(".radar-sector[data-highlighted=true]"),
+  ).toHaveCount(1);
+  await svg.focus();
+  await page.keyboard.press("+");
+  await expect(page).toHaveURL(/zoom=1.25/);
+  await page.keyboard.press("0");
+  const marker = (await page
+    .locator("circle[data-scenario]")
+    .first()
+    .boundingBox())!;
+  await page.mouse.move(
+    marker.x + marker.width / 2,
+    marker.y + marker.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    marker.x + marker.width / 2 + 40,
+    marker.y + marker.height / 2,
+    { steps: 5 },
+  );
+  await page.mouse.up();
+  await expect
+    .poll(async () =>
+      Number(
+        await page.locator("[data-testid=camera]").getAttribute("data-pan-x"),
+      ),
+    )
+    .toBeCloseTo(40);
+  expect(new URL(page.url()).searchParams.has("selected")).toBe(false);
+  await page.getByRole("button", { name: "Сброс масштаба" }).click();
+  for (const scale of [1, 3, 8]) {
+    await setZoom(scale);
     await svg.scrollIntoViewIfNeeded();
     for (const [dx, dy] of [
       [1, 0],
@@ -52,7 +132,7 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
       [1, 1],
       [-1, -1],
     ]) {
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < (scale === 8 ? 6 : 4); i++) {
         const b = (await svg.boundingBox())!;
         const start = {
           x: dx < 0 ? b.x + b.width - 2 : b.x + 2,
@@ -83,6 +163,9 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
       expect(
         Math.hypot(geom.x, geom.y) + Math.min(geom.w, geom.h) * 0.28,
       ).toBeLessThanOrEqual(geom.r + 0.1);
+      expect(
+        Math.hypot(geom.x, geom.y) + Math.min(geom.w, geom.h) * 0.28,
+      ).toBeGreaterThanOrEqual(geom.r - 0.1);
       await expect(page.locator(".direction-label").first()).toBeVisible();
       const overlap = await page.locator(".radar-viewport").evaluate((node) => {
         const labels = [...node.querySelectorAll(".direction-label")].map((n) =>
@@ -104,21 +187,53 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
         );
       });
       expect(overlap).toBe(false);
+      const expected = sectorFootprints(
+        { z: scale, x: geom.x, y: geom.y },
+        { width: geom.w, height: geom.h },
+        8,
+      ).map((s) => String(s.index));
+      expect(
+        await page
+          .locator(".direction-label")
+          .evaluateAll((nodes) =>
+            nodes.map((n) => n.getAttribute("data-sector")),
+          ),
+      ).toEqual(expected);
+      await expect(page.locator(".direction-leaders line")).toHaveCount(
+        expected.length,
+      );
       await expect(
         page.getByText("Данные временно недоступны", { exact: true }),
       ).toHaveCount(0);
     }
+  }
+  if (info.project.name === "768") {
+    await page.getByRole("button", { name: "Сброс масштаба" }).click();
+    await setZoom(8);
+    await svg.scrollIntoViewIfNeeded();
+    const b = (await svg.boundingBox())!;
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.move(b.x + b.width - 2, b.y + b.height - 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        b.x + b.width - 2 - 400,
+        b.y + b.height - 2 - 400 * Math.tan(Math.PI / 8),
+        { steps: 4 },
+      );
+      await page.mouse.up();
+    }
+    await expect(page.locator(".direction-label")).toHaveCount(1);
   }
   expect(requests.length).toBe(initialRequests);
   expect(errors).toEqual([]);
   await page.getByRole("button", { name: "Сброс масштаба" }).click();
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768") {
     await capture(
-      `docs/screenshots/2b-correction/radar-${info.project.name}.jpg`,
+      `docs/screenshots/2b-final-ux/radar-${info.project.name}.jpg`,
     );
-    await page.getByLabel("Установить масштаб").selectOption("3");
+    await setZoom(3);
     await capture(
-      `docs/screenshots/2b-correction/radar-3x-${info.project.name}.jpg`,
+      `docs/screenshots/2b-final-ux/radar-3x-${info.project.name}.jpg`,
     );
     const b = (await svg.boundingBox())!;
     for (let i = 0; i < 4; i++) {
@@ -128,7 +243,30 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
       await page.mouse.up();
     }
     await capture(
-      `docs/screenshots/2b-correction/radar-limit-${info.project.name}.jpg`,
+      `docs/screenshots/2b-final-ux/radar-limit-${info.project.name}.jpg`,
+    );
+  }
+  if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768") {
+    await page.getByRole("button", { name: "Сброс масштаба" }).click();
+    await setZoom(8);
+    await capture(
+      `docs/screenshots/2b-final-ux/radar-8x-${info.project.name}.jpg`,
+    );
+    await svg.scrollIntoViewIfNeeded();
+    const b = (await svg.boundingBox())!;
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.move(b.x + 2, b.y + 2);
+      await page.mouse.down();
+      await page.mouse.move(
+        b.x + b.width - 2,
+        b.y + 2 + (b.width - 4) * Math.tan(Math.PI / 12),
+        { steps: 3 },
+      );
+      await page.mouse.up();
+    }
+    await expect(page.locator(".direction-label")).toHaveCount(1);
+    await capture(
+      `docs/screenshots/2b-final-ux/radar-8x-limit-${info.project.name}.jpg`,
     );
   }
   await page.getByRole("button", { name: "Сброс масштаба" }).click();
@@ -137,7 +275,7 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     page.getByRole("region", { name: "Быстрый просмотр сценария" }),
   ).toBeVisible();
   expect(new URL(page.url()).searchParams.get("q")).toBe("SYN-");
-  await page.getByLabel("Установить масштаб").selectOption("3");
+  await setZoom(3);
   const controlOverlap = await page.locator(".radar-tools").evaluate((node) => {
     const a = node.getBoundingClientRect(),
       b = document
@@ -153,10 +291,10 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   expect(controlOverlap).toBe(false);
   await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
   await expect(page).toHaveURL(/from=radar/);
-  expect(new URL(page.url()).searchParams.get("zoom")).toBe("3");
+  expect(Number(new URL(page.url()).searchParams.get("zoom"))).toBeCloseTo(3);
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(page).toHaveURL(/\/scenarios\/radar\?/);
-  expect(new URL(page.url()).searchParams.get("zoom")).toBe("3");
+  expect(Number(new URL(page.url()).searchParams.get("zoom"))).toBeCloseTo(3);
   await page
     .locator("#scenario-subnav")
     .getByRole("link", { name: "Матрица зрелости" })
@@ -177,6 +315,21 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   await page.keyboard.press("Escape");
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768")
     await capture(
-      `docs/screenshots/2b-correction/matrix-${info.project.name}.jpg`,
+      `docs/screenshots/2b-final-ux/matrix-${info.project.name}.jpg`,
     );
+  if (info.project.name === "768") {
+    const touch = await browser.newContext({
+      hasTouch: true,
+      viewport: { width: 768, height: 900 },
+    });
+    const touchPage = await touch.newPage();
+    await touchPage.goto(new URL("/scenarios/radar?q=SYN-", page.url()).href);
+    await touchPage.getByLabel("Приблизить", { exact: true }).tap();
+    await expect(touchPage).toHaveURL(/zoom=1.25/);
+    await touchPage.getByLabel("Отдалить", { exact: true }).tap();
+    await expect(touchPage).toHaveURL(/zoom=1&/);
+    await touchPage.getByRole("button", { name: "Сброс масштаба" }).tap();
+    await expect(touchPage.locator(".direction-label")).toHaveCount(8);
+    await touch.close();
+  }
 });

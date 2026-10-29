@@ -1,10 +1,11 @@
 "use client";
 import { ContextLink as Link } from "./camera-context";
 import { useRadarCamera } from "./use-radar-camera";
-import { radarRadius, visibleSectors } from "@/domain/camera";
+import { radarRadius } from "@/domain/camera";
+import { RadarLabels } from "./radar-labels";
 import { MatrixScatter } from "./matrix-scatter";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   matrixCells,
   radarGroups,
@@ -41,7 +42,7 @@ export function AnalyticsView({
   );
   const controls = useRadarCamera(view);
   const { camera, viewport, svg, moved } = controls;
-  const visible = visibleSectors(camera, viewport, data.directions.length);
+  const [highlight, setHighlight] = useState<number | null>(null);
   const baseScale = radarRadius(viewport) / 220;
   const groups = useMemo(() => radarGroups(data.rows), [data.rows]);
   const cells = useMemo(() => matrixCells(data.rows), [data.rows]);
@@ -182,32 +183,20 @@ export function AnalyticsView({
         <>
           <div className="radar-viewport">
             <div className="radar-tools" aria-label="Масштаб радара">
-              <button
-                onClick={() => controls.zoom(1.25)}
-                aria-label="Приблизить"
-              >
-                +
-              </button>
-              <output>{camera.z.toFixed(1)}×</output>
-              <select
-                aria-label="Установить масштаб"
-                value={[1, 3, 8].includes(camera.z) ? camera.z : "current"}
-                onChange={(e) =>
-                  controls.zoom(Number(e.target.value) / camera.z)
-                }
-              >
-                <option value="current" disabled>
-                  Текущий
-                </option>
-                {[1, 3, 8].map((z) => (
-                  <option key={z} value={z}>
-                    {z}×
-                  </option>
-                ))}
-              </select>
-              <button onClick={() => controls.zoom(0.8)} aria-label="Отдалить">
-                −
-              </button>
+              <div className="touch-zoom-controls">
+                <button
+                  onClick={() => controls.zoom(1.25)}
+                  aria-label="Приблизить"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => controls.zoom(0.8)}
+                  aria-label="Отдалить"
+                >
+                  −
+                </button>
+              </div>
               <button onClick={() => controls.save({ z: 1, x: 0, y: 0 })}>
                 Сброс масштаба
               </button>
@@ -217,6 +206,9 @@ export function AnalyticsView({
               ref={svg}
               viewBox={`0 0 ${viewport.width} ${viewport.height}`}
               aria-label="Интерактивный технологический радар"
+              tabIndex={0}
+              aria-describedby="radar-keyboard-help"
+              onKeyDown={controls.onKeyDown}
               onPointerDown={controls.onPointerDown}
               onPointerMove={controls.onPointerMove}
               onPointerUp={controls.onPointerUp}
@@ -263,6 +255,15 @@ export function AnalyticsView({
                     return (
                       <g key={d.id}>
                         <path
+                          className="radar-sector"
+                          data-sector={i}
+                          data-highlighted={highlight === i || undefined}
+                          d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220} A220 220 0 0 1 ${340 + Math.cos(a + (Math.PI * 2) / data.directions.length) * 220} ${290 + Math.sin(a + (Math.PI * 2) / data.directions.length) * 220} Z`}
+                          fill={highlight === i ? "#2274c525" : "transparent"}
+                          onMouseEnter={() => setHighlight(i)}
+                          onMouseLeave={() => setHighlight(null)}
+                        />
+                        <path
                           d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220}`}
                           stroke="white"
                         />
@@ -273,58 +274,18 @@ export function AnalyticsView({
                 </g>
               </g>
             </svg>
-            <div
-              className="direction-labels"
-              aria-label="Видимые технологические направления"
-            >
-              {["left", "right"].map((side) => (
-                <div
-                  className={`direction-rail ${side}`}
-                  key={side}
-                  style={
-                    side === "right" &&
-                    (query.selected || memberRows) &&
-                    viewport.width >= 900
-                      ? { right: 390 }
-                      : undefined
-                  }
-                >
-                  {visible
-                    .filter(
-                      (index) =>
-                        (viewport.width < 900 && (query.selected || memberRows)
-                          ? "left"
-                          : Math.cos(
-                                ((index + 0.5) * Math.PI * 2) /
-                                  data.directions.length -
-                                  Math.PI / 2,
-                              ) < 0
-                            ? "left"
-                            : "right") === side,
-                    )
-                    .sort(
-                      (a, b) =>
-                        Math.sin(
-                          ((a + 0.5) * Math.PI * 2) / data.directions.length -
-                            Math.PI / 2,
-                        ) -
-                        Math.sin(
-                          ((b + 0.5) * Math.PI * 2) / data.directions.length -
-                            Math.PI / 2,
-                        ),
-                    )
-                    .map((index) => (
-                      <div
-                        key={data.directions[index].id}
-                        className="direction-label"
-                        title={data.directions[index].name}
-                      >
-                        {data.directions[index].name}
-                      </div>
-                    ))}
-                </div>
-              ))}
-            </div>
+            <p id="radar-keyboard-help" className="sr-only">
+              Масштаб: плюс и минус; 0 — сброс. Стрелки — перемещение радара. На
+              сенсорном экране используйте кнопки приближения и отдаления.
+            </p>
+            <RadarLabels
+              camera={camera}
+              viewport={viewport}
+              directions={data.directions}
+              inspectorOpen={Boolean(query.selected || memberRows)}
+              highlight={highlight}
+              onHighlight={setHighlight}
+            />
           </div>
           <div className="analytics-legend">
             <span style={{ color: statusColors.yes }}>● Реализуется</span>
@@ -333,15 +294,25 @@ export function AnalyticsView({
               ● Статус неизвестен
             </span>
             <span>Размер: влияние 1–3 · пунктир: неизвестно</span>
-            <span>
-              Без ОГ: {data.rows.filter((r) => r.readiness === null).length} ·
-              без влияния: {data.rows.filter((r) => r.impact === null).length}
-            </span>
-            <span>
-              {data.total} сценариев ·{" "}
-              {groups.reduce((n, g) => n + g.rows.length, 0)} маркеров в режиме
-              точек
-            </span>
+          </div>
+          <div className="radar-footer">
+            <span className="radar-total">{data.total} сценариев</span>
+            <details className="sample-details">
+              <summary>О выборке</summary>
+              <div>
+                <p>Демонстрационные сценарии, оценки и связи синтетические.</p>
+                <p>
+                  Без ОГ: {data.rows.filter((r) => r.readiness === null).length}{" "}
+                  · без влияния:{" "}
+                  {data.rows.filter((r) => r.impact === null).length}
+                </p>
+                <p>
+                  {groups.reduce((n, g) => n + g.rows.length, 0)} маркеров в
+                  режиме точек. Сценарий с несколькими направлениями показан в
+                  каждом соответствующем секторе.
+                </p>
+              </div>
+            </details>
           </div>
           <button
             className="unknown-button"

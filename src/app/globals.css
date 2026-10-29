@@ -2397,6 +2397,8 @@ tbody tr:hover {
   overflow: hidden;
   display: block;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .radar-viewport .radar-tools {
   position: absolute;
@@ -2410,40 +2412,93 @@ tbody tr:hover {
 }
 .direction-labels {
   position: absolute;
-  inset: 75px 14px 12px;
+  inset: 0;
   pointer-events: none;
   z-index: 3;
 }
-.direction-rail {
+.direction-leaders {
+  width: 100%;
+  height: 100%;
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: clamp(115px, 17%, 205px);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 10px;
+  inset: 0;
+  fill: #94b6cf;
+  stroke: #94b6cf;
+  stroke-width: 1;
 }
-.direction-rail.left {
-  left: 0;
-}
-.direction-rail.right {
-  right: 0;
+.direction-leaders .active {
+  fill: #2274c5;
+  stroke: #2274c5;
+  stroke-width: 1.5;
 }
 .direction-label {
+  position: absolute;
   pointer-events: auto;
   background: #fffffff0;
-  border: 1px solid #dce8f1;
-  border-radius: 7px;
-  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
   color: #345a7e;
   font-size: 11px;
-  line-height: 1.4;
-  overflow: hidden;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.direction-label > span {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  box-shadow: 0 2px 7px #1d45630b;
+  overflow: hidden;
+}
+.direction-label[data-compact] {
+  line-height: 14px;
+}
+.direction-label[data-compact] > span {
+  -webkit-line-clamp: 3;
+}
+.direction-label[data-active],
+.direction-label:focus-visible {
+  border-color: #78acd2;
+  outline: none;
+  color: #18568f;
+  background: white;
+}
+.touch-zoom-controls {
+  display: none;
+  gap: 5px;
+}
+@media (any-pointer: coarse) {
+  .touch-zoom-controls {
+    display: flex;
+  }
+  .radar-tools button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+.interactive-radar:focus-visible {
+  outline: 2px solid #2274c5;
+  outline-offset: -3px;
+}
+.radar-footer {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 2px 20px 0;
+  font-size: 12px;
+  color: #59728a;
+}
+.sample-details summary {
+  cursor: pointer;
+}
+.sample-details[open] {
+  flex: 1;
+}
+.sample-details p {
+  margin: 6px 0;
+  max-width: 650px;
 }
 .matrix-scatter {
   display: block;
@@ -2485,16 +2540,18 @@ tbody tr:hover {
 .aggregate-matrix summary {
   cursor: pointer;
 }
-.scenario-workspace:has(.radar-viewport) > .scenario-inspector {
+.scenario-workspace:has(.radar-viewport) > .scenario-inspector,
+.analytical-stage:has(.radar-viewport) > .group-inspector {
   top: 145px;
 }
 @media (max-width: 800px) {
   .direction-label {
     font-size: 10px;
     padding: 5px;
+    line-height: 15px;
   }
-  .direction-rail {
-    width: 130px;
+  .direction-label > span {
+    -webkit-line-clamp: 4;
   }
   .radar-viewport {
     height: 520px;

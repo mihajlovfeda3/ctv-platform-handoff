@@ -54,7 +54,9 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   const selected = new URL(page.url()).searchParams.get("selected");
   await page.keyboard.press("Escape");
   await page.getByLabel("Закрыть группу").click();
-  await page.getByLabel("Приблизить", { exact: true }).click();
+  await expect(page.getByLabel("Состав выбранной группы")).toHaveCount(0);
+  await radar.focus();
+  await page.keyboard.press("+");
   await expect(page).toHaveURL(/zoom=1.25/);
   await radar.scrollIntoViewIfNeeded();
   const box = (await radar.boundingBox())!;

@@ -48,15 +48,7 @@ export async function Workspace({
     <div className="page scenarios-page">
       <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
-        <div>
-          <div className="eyebrow">ЦИФРОВОЕ ТЕХНОЛОГИЧЕСКОЕ ВИДЕНИЕ</div>
-          <h1>Сценарии применения ЦТ</h1>
-          <p>Исследуйте технологии в контексте бизнес-задач</p>
-        </div>
-        <div className="selection-count">
-          <strong>{result.total.toLocaleString("ru-RU")}</strong> в выборке{" "}
-          <span>Синтетические данные</span>
-        </div>
+        <h1>Сценарии применения ЦТ</h1>
       </header>
       <nav className="scenario-tabs" aria-label="Представления сценариев">
         {Object.entries(views).map(([key, title]) => (
