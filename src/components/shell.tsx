@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { workspaceQuery } from "@/features/scenarios/filter-state";
 import { scenarioQuery } from "@/domain/scenario";
 import {
@@ -16,7 +16,8 @@ import {
   Cpu,
   Layers3,
   ArrowUpRight,
-  CircleHelp,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 const navigation = [
   { href: "/overview", label: "Обзор", icon: LayoutDashboard },
@@ -51,16 +52,83 @@ export function Shell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, [router]);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false),
+    [peek, setPeek] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearTimer = () => {
+    if (timer.current) clearTimeout(timer.current);
+  };
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      try {
+        setCollapsed(localStorage.getItem("ctv-nav-collapsed") === "true");
+      } catch {}
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+  const toggle = () => {
+    clearTimer();
+    const next = peek ? false : !collapsed;
+    setCollapsed(next);
+    setPeek(false);
+    try {
+      localStorage.setItem("ctv-nav-collapsed", String(next));
+    } catch {}
+  };
+  const open = () => {
+    clearTimer();
+    if (collapsed) timer.current = setTimeout(() => setPeek(true), 180);
+  };
+  const close = () => {
+    clearTimer();
+    timer.current = setTimeout(() => {
+      if (!(
+        document.activeElement?.matches(":focus-visible") &&
+        document.activeElement?.closest(".sidebar")
+      ))
+        setPeek(false);
+    }, 260);
+  };
+
   const active = navigation.find((item) => pathname.startsWith(item.href));
   return (
-    <div className={`app-shell ${collapsed ? "nav-collapsed" : ""}`}>
-      <Suspense fallback={<aside className="sidebar" />}>
-        <Sidebar
-          collapsed={collapsed}
-          onToggle={() => setCollapsed((v) => !v)}
-        />
-      </Suspense>
+    <div
+      className={`app-shell ${collapsed ? "nav-collapsed" : ""} ${peek && collapsed ? "nav-peek" : ""} ${pathname === "/overview" ? "overview-shell" : ""}`}
+    >
+      <div
+        onPointerLeave={close}
+        onFocusCapture={(event) => {
+          clearTimer();
+          if (
+            collapsed &&
+            (event.target as HTMLElement).matches(":focus-visible")
+          )
+            setPeek(true);
+        }}
+        onBlurCapture={close}
+      >
+        {collapsed && (
+          <div
+            className="nav-edge"
+            data-testid="nav-edge"
+            onPointerEnter={(e) => {
+              if (e.pointerType === "mouse") open();
+            }}
+            aria-hidden="true"
+          />
+        )}
+        <Suspense fallback={<aside className="sidebar" />}>
+          <Sidebar
+            collapsed={collapsed && !peek}
+            preview={collapsed && peek}
+            onToggle={toggle}
+            onEnter={clearTimer}
+          />
+        </Suspense>
+      </div>
       <div className="main-shell">
         <header className="topbar">
           <div className="breadcrumb">
@@ -83,9 +151,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
 function Sidebar({
   collapsed,
   onToggle,
+  preview,
+  onEnter,
 }: {
   collapsed: boolean;
   onToggle: () => void;
+  preview: boolean;
+  onEnter: () => void;
 }) {
   const pathname = usePathname(),
     params = useSearchParams(),
@@ -103,29 +175,46 @@ function Sidebar({
             ? query.from
             : null;
   return (
-    <aside className="sidebar" aria-label="Боковая панель">
+    <aside
+      className="sidebar"
+      aria-label="Боковая панель"
+      onPointerEnter={onEnter}
+    >
       <button
         className="sidebar-toggle"
-        aria-label={collapsed ? "Развернуть панель" : "Свернуть панель"}
+        aria-label={
+          preview
+            ? "Закрепить панель"
+            : collapsed
+              ? "Развернуть панель"
+              : "Свернуть панель"
+        }
         aria-expanded={!collapsed}
         onClick={onToggle}
-        title={collapsed ? "Развернуть панель" : "Свернуть панель"}
+        title={
+          preview
+            ? "Закрепить панель"
+            : collapsed
+              ? "Развернуть панель"
+              : "Свернуть панель"
+        }
       >
-        {collapsed ? "»" : "«"}
+        {collapsed || preview ? (
+          <PanelLeftOpen size={17} />
+        ) : (
+          <PanelLeftClose size={17} />
+        )}
       </button>
       <Link href="/overview" className="brand" aria-label="ЦТВ — на обзор">
-        <span className="brand-symbol">
-          ц<span>т</span>в<span className="brand-dot" />
-        </span>
-        <span className="brand-caption">
-          ЦИФРОВОЕ
+        <span className="brand-full">
+          Цифровое
           <br />
-          ТЕХНОЛОГИЧЕСКОЕ ВИДЕНИЕ
+          технологическое
+          <br />
+          видение
         </span>
+        <span className="brand-compact">ЦТВ</span>
       </Link>
-      <div className="workspace-label">
-        ПЛАТФОРМА ЦТВ <span>01</span>
-      </div>
       <nav aria-label="Основная навигация">
         {navigation.map(({ href, label, icon: Icon }) => (
           <div key={href} className="nav-row">
@@ -137,7 +226,7 @@ function Sidebar({
               scroll={false}
               className={`nav-item ${pathname.startsWith(href) ? "active" : ""}`}
               aria-label={label}
-              title={collapsed ? label : undefined}
+              title={label}
               aria-current={pathname === href ? "page" : undefined}
             >
               <Icon size={19} />
@@ -167,22 +256,29 @@ function Sidebar({
                   hidden={!expanded}
                   className="scenario-subnav"
                 >
-                  {Object.entries(views).map(([key, label]) => (
-                    <Link
-                      key={key}
-                      href={workspaceHref(key as ScenarioView, query)}
-                      prefetch={false}
-                      scroll={false}
-                      aria-current={activeView === key ? "page" : undefined}
-                      aria-label={label}
-                      title={collapsed ? label : undefined}
-                    >
-                      <span aria-hidden="true">
-                        {key === "radar" ? "◎" : key === "catalog" ? "≡" : "▦"}
-                      </span>
-                      <span className="nav-label-text">{label}</span>
-                    </Link>
-                  ))}
+                  {(["catalog", "radar", "maturity"] as const).map((key) => {
+                    const label = views[key];
+                    return (
+                      <Link
+                        key={key}
+                        href={workspaceHref(key as ScenarioView, query)}
+                        prefetch={false}
+                        scroll={false}
+                        aria-current={activeView === key ? "page" : undefined}
+                        aria-label={label}
+                        title={label}
+                      >
+                        <span className="subnav-full">{label}</span>
+                        <span className="subnav-compact" aria-hidden="true">
+                          {key === "catalog"
+                            ? "Кат"
+                            : key === "radar"
+                              ? "Рад"
+                              : "Мат"}
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>{" "}
               </>
             )}
@@ -190,12 +286,9 @@ function Sidebar({
         ))}
       </nav>
       <div className="sidebar-bottom">
-        <Link href="/overview#foundation" className="help-link">
-          <CircleHelp size={17} /> О платформе <ArrowUpRight size={14} />
+        <Link href="/overview" className="help-link">
+          О платформе <ArrowUpRight size={14} />
         </Link>
-        <div className="sidebar-version">
-          ПЛАТФОРМА ЦТВ <span>v0.1</span>
-        </div>
       </div>
     </aside>
   );

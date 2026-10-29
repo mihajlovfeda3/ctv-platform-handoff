@@ -65,7 +65,7 @@ jobs:
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium
 
-      - name: Browser UX regression (three viewports)
+      - name: Browser UX regression (four viewports)
         run: npm run test:e2e
 
       - name: Browser regression on 2500 synthetic scenarios
