@@ -12,6 +12,7 @@ export function Select({
   disabled,
   invalid,
   describedBy,
+  searchable: searchEnabled,
 }: {
   label: string;
   value: string;
@@ -20,6 +21,7 @@ export function Select({
   disabled?: boolean;
   invalid?: boolean;
   describedBy?: string;
+  searchable?: boolean;
 }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -36,11 +38,12 @@ export function Select({
   } | null>(null);
   const [term, setTerm] = useState("");
   const [active, setActive] = useState(0);
-  const searchable = items.length >= 8;
+  const searchable = searchEnabled ?? items.length >= 8;
   const filtered = items.filter((item) =>
     item.name.toLocaleLowerCase("ru").includes(term.toLocaleLowerCase("ru")),
   );
   const open = position !== null;
+  const selectedName = items.find((i) => i.id === value)?.name ?? "—";
   function close(restoreFocus = false) {
     setPosition(null);
     if (restoreFocus) trigger.current?.focus({ preventScroll: true });
@@ -53,7 +56,7 @@ export function Select({
     const upwards = below < 250 && above > below;
     const width = Math.min(
       window.innerWidth - 24,
-      Math.max(rect.width, searchable ? 360 : 180),
+      Math.max(rect.width, searchable ? 400 : 230),
     );
     setTerm("");
     setActive(
@@ -68,7 +71,7 @@ export function Select({
       ...(upwards
         ? { bottom: window.innerHeight - rect.top + 6 }
         : { top: rect.bottom + 6 }),
-      maxHeight: Math.min(360, Math.max(120, upwards ? above : below)),
+      maxHeight: Math.min(380, Math.max(120, upwards ? above : below)),
     });
   }
   function choose(index: number) {
@@ -145,11 +148,14 @@ export function Select({
         type="button"
         className="ctv-select-trigger"
         aria-label={label}
+        title={selectedName}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-list` : undefined}
         data-invalid={invalid}
-        aria-describedby={describedBy}
+        aria-describedby={[describedBy, `${id}-value`]
+          .filter(Boolean)
+          .join(" ")}
         disabled={disabled}
         onClick={() => (open ? close() : show())}
         onKeyDown={(e) => {
@@ -159,9 +165,12 @@ export function Select({
           }
         }}
       >
-        <span>{items.find((i) => i.id === value)?.name ?? "—"}</span>
+        <span>{selectedName}</span>
         <ChevronDown size={14} aria-hidden="true" />
       </button>
+      <span id={`${id}-value`} className="sr-only">
+        Выбрано: {selectedName}
+      </span>
       {position &&
         createPortal(
           <div

@@ -17,6 +17,13 @@ import {
 import type { ScenarioList } from "@/server/scenarios";
 import { implementationLabels, type ScenarioQuery } from "@/domain/scenario";
 const subscribe = () => () => {};
+const sortLabels = {
+  id: "ID",
+  name: "Название",
+  maturity: "РЗ",
+  readiness: "ОГ",
+  impact: "Влияние",
+} as const;
 export function ScenarioCatalog({
   result,
   query,
@@ -73,9 +80,31 @@ export function ScenarioCatalog({
     >
       <div className="catalog-heading">
         <span className="catalog-count" aria-live="polite">
-          {result.total.toLocaleString("ru-RU")} сценариев найдено
+          Найдено <strong>{result.total.toLocaleString("ru-RU")}</strong>{" "}
+          сценариев
         </span>
-        <span className="catalog-name-sort">{sort("name", "По названию")}</span>
+        <div className="catalog-sort">
+          <span>Сортировка</span>
+          <Select
+            label="Сортировка"
+            value={`${query.sort}:${query.order}`}
+            items={Object.entries(sortLabels).flatMap(([key, label]) => [
+              { id: `${key}:asc`, name: `${label} · по возрастанию` },
+              { id: `${key}:desc`, name: `${label} · по убыванию` },
+            ])}
+            searchable={false}
+            onValueChange={(value) => {
+              const [sort, order] = value.split(":");
+              router.replace(
+                cameraHref(
+                  href({ sort, order, page: 1 }),
+                  window.location.search,
+                ),
+                { scroll: false },
+              );
+            }}
+          />
+        </div>
       </div>
       {!result.items.length ? (
         <div className="empty-state">
@@ -107,9 +136,7 @@ export function ScenarioCatalog({
           <table className="scenario-table" aria-label="Сценарии применения">
             <thead>
               <tr>
-                <th aria-sort={ariaSort(query.sort === "id" ? "id" : "name")}>
-                  {sort("id", "ID")}
-                </th>
+                <th aria-sort={ariaSort("id")}>{sort("id", "ID")}</th>
                 <th aria-sort={ariaSort("maturity")}>
                   {sort("maturity", "РЗ")}
                 </th>

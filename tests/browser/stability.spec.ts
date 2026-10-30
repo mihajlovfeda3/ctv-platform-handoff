@@ -95,15 +95,16 @@ test("all exact scores clear ranges, invalid bounds stay inline, deep links rema
   await page.keyboard.press("ArrowLeft");
   await expect(page).toHaveURL(/impactMax=2/);
   await settled(page);
-  await page
-    .getByRole("button", { name: "Влияние: точное значение", exact: true })
-    .click();
-  await page.getByRole("option", { name: "3", exact: true }).click();
-  await expect(page).toHaveURL(/impact=3/);
+  await page.goto("/scenarios/catalog?impact=3");
   await settled(page);
-  expect(new URL(page.url()).searchParams.has("impactMax")).toBe(false);
-  await expect(page.locator("[name=impactMax]")).toHaveValue("3");
+  await page.locator(".advanced-filters summary").click();
   await expect(page.locator("[name=impactMin]")).toHaveValue("3");
+  await page.locator("[name=impactMin]").focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(page).toHaveURL(/impactMin=2/);
+  await settled(page);
+  expect(new URL(page.url()).searchParams.has("impact")).toBe(false);
+  await expect(page.locator("[name=impactMax]")).toHaveValue("3");
   await page.goto("/scenarios/catalog?readinessMin=6&readinessMax=4");
   await expect(page.locator("#error-readinessMax")).toBeVisible();
   await expect(

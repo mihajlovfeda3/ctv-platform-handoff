@@ -220,3 +220,125 @@ test("view titles, ID hierarchy and searchable keyboard-accessible filters", asy
   }
   expect(selected).toBeTruthy();
 });
+
+test("sort control, header arrows and actual database ordering agree", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/scenarios/catalog");
+  await ready(page);
+  const sorting = page.getByRole("button", { name: "Сортировка", exact: true });
+  await expect(sorting).toHaveText("ID · по возрастанию");
+  for (const [key, label] of [
+    ["name", "Название"],
+    ["id", "ID"],
+    ["impact", "Влияние"],
+  ]) {
+    for (const [order, description] of [
+      ["asc", "по возрастанию"],
+      ["desc", "по убыванию"],
+    ]) {
+      await sorting.click();
+      await page
+        .getByRole("option", { name: `${label} · ${description}`, exact: true })
+        .click();
+      await expect(sorting).toHaveText(`${label} · ${description}`);
+      await expect(page).toHaveURL(new RegExp(`sort=${key}`));
+      expect(new URL(page.url()).searchParams.get("order")).toBe(order);
+      const data = await (
+        await request.get(
+          `/api/scenarios?sort=${key}&order=${order}&pageSize=25`,
+        )
+      ).json();
+      await expect(page.locator(".catalog tbody tr").first()).toHaveAttribute(
+        "data-scenario-id",
+        data.items[0].id,
+      );
+      const heading = page.locator(".catalog th").first();
+      await expect(heading).toHaveAttribute(
+        "aria-sort",
+        key === "id" ? (order === "asc" ? "ascending" : "descending") : "none",
+      );
+      await expect(heading.locator("svg")).toHaveCount(key === "id" ? 1 : 0);
+    }
+  }
+});
+
+test("single impact range, clean advanced filters and dropdown layout", async ({
+  page,
+  request,
+}) => {
+  for (const [lo, hi] of [
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [1, 2],
+    [2, 3],
+    [1, 3],
+  ]) {
+    await page.goto(`/scenarios/catalog?impactMin=${lo}&impactMax=${hi}`);
+    await ready(page);
+    await page.locator(".advanced-filters summary").click();
+    await expect(page.locator("[name=impactMin]")).toHaveCount(1);
+    await expect(page.locator("[name=impactMax]")).toHaveValue(String(hi));
+    await expect(page.locator("[name=impactMin]")).toHaveValue(String(lo));
+    await expect(
+      page.getByRole("button", { name: "Влияние: точное значение" }),
+    ).toHaveCount(0);
+    await expect(page.locator("[name=context]")).toHaveCount(0);
+    await expect(
+      page.getByLabel("Бизнес-процесс / этап", { exact: true }),
+    ).toHaveCount(0);
+    const data = await (
+      await request.get(
+        `/api/scenarios?impactMin=${lo}&impactMax=${hi}&pageSize=50`,
+      )
+    ).json();
+    for (const item of data.items) {
+      const v = item.assessments.find(
+        (a: { metric: string }) => a.metric === "business_impact",
+      ).value;
+      expect(v).toBeGreaterThanOrEqual(lo);
+      expect(v).toBeLessThanOrEqual(hi);
+    }
+    await expect(page.locator(".catalog-count strong")).toHaveText(
+      String(data.total),
+    );
+  }
+  await page.goto("/scenarios/catalog?impact=3");
+  await ready(page);
+  await page.locator(".advanced-filters summary").click();
+  await page.locator("[name=impactMin]").focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(page).toHaveURL(/impactMin=2/);
+  expect(new URL(page.url()).searchParams.has("impact")).toBe(false);
+  await page.locator("[name=impactMin]").focus();
+  await page.keyboard.press("Home");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.has("impactMin"))
+    .toBe(false);
+  await ready(page);
+  await expect(page.locator(".catalog-count strong")).toHaveText("80");
+  await page
+    .getByRole("button", { name: "БИЗНЕС-НАПРАВЛЕНИЕ", exact: true })
+    .click();
+  const box = (await page.locator(".ctv-select-popover").boundingBox())!;
+  expect(box.height).toBeLessThanOrEqual(380);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page
+    .getByRole("combobox", { name: "Поиск: БИЗНЕС-НАПРАВЛЕНИЕ" })
+    .fill("Система управления");
+  await expect(page.getByRole("option")).toHaveCount(1);
+  expect(
+    await page
+      .getByRole("option")
+      .evaluate((n) => n.scrollWidth <= n.clientWidth),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

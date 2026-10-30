@@ -193,7 +193,7 @@ export function ScenarioFilters({
         keys: [key, `${key}Min`, `${key}Max`],
       });
   }
-  if (query.context !== "synthetic-lab")
+  if (view !== "catalog" && query.context !== "synthetic-lab")
     chips.push({ label: `Контекст: ${query.context}`, keys: ["context"] });
   return (
     <form
@@ -389,39 +389,34 @@ export function ScenarioFilters({
             </>
           )}
 
-          <label>
-            <span>Бизнес-процесс / этап</span>
-            {view === "catalog" ? (
-              <Select
-                disabled
-                label="Бизнес-процесс / этап"
-                value=""
-                items={[{ id: "", name: "Справочник не согласован" }]}
-                onValueChange={() => {}}
-              />
-            ) : (
+          {view !== "catalog" && (
+            <label>
+              <span>Бизнес-процесс / этап</span>
               <select disabled aria-label="Бизнес-процесс / этап">
                 <option>Справочник не согласован</option>
               </select>
-            )}
-          </label>
+            </label>
+          )}
           {field(
             "functionalGroupId",
             "Функциональная группа",
             references.groups,
           )}
-          {field("impact", "Влияние: точное значение", options(3))}
+          {view !== "catalog" &&
+            field("impact", "Влияние: точное значение", options(3))}
           {range("impact", "Влияние на бизнес-цели", 3)}
-          <label>
-            <span>Организационный контекст</span>
-            <input
-              name="context"
-              value={draft.context ?? ""}
-              onChange={() => {}}
-              required
-              maxLength={160}
-            />
-          </label>
+          {view !== "catalog" && (
+            <label>
+              <span>Организационный контекст</span>
+              <input
+                name="context"
+                value={draft.context ?? ""}
+                onChange={() => {}}
+                required
+                maxLength={160}
+              />
+            </label>
+          )}
         </div>
       </details>
     </form>
