@@ -86,6 +86,41 @@ export function boxesOverlap(a: LabelBox, b: LabelBox, gap = 0) {
   );
 }
 
+export function contextualSectors(c: Camera, v: Viewport, count: number) {
+  const visible = sectorFootprints(c, v, count);
+  if (c.z <= 1.1) return visible;
+  // The sector under the viewport centre and its closest visible neighbours.
+  // At the radar centre there is no unique direction: use the largest visible
+  // footprints, rather than flickering labels in response to pointer movement.
+  const area = (s: SectorFootprint) =>
+    Math.abs(
+      s.polygon.reduce((sum, p, i) => {
+        const q = s.polygon[(i + 1) % s.polygon.length];
+        return sum + p.x * q.y - p.y * q.x;
+      }, 0),
+    );
+  const angle = (Math.atan2(-c.y, -c.x) + Math.PI / 2 + tau) % tau;
+  const sector =
+    Math.hypot(c.x, c.y) > 10
+      ? Math.floor((angle / tau) * count)
+      : ([...visible].sort((a, b) => area(b) - area(a) || a.index - b.index)[0]
+          ?.index ?? 0);
+  const distance = (index: number) =>
+    Math.min(
+      (index - sector + count) % count,
+      (sector - index + count) % count,
+    );
+  const limit = c.z >= 2.8 ? 3 : 5;
+  return visible
+    .sort(
+      (a, b) =>
+        distance(a.index) - distance(b.index) ||
+        area(b) - area(a) ||
+        a.index - b.index,
+    )
+    .slice(0, limit);
+}
+
 export function layoutRadarLabels(
   c: Camera,
   v: Viewport,
@@ -98,7 +133,7 @@ export function layoutRadarLabels(
     placed: LabelBox[] = [],
     center = { x: v.width / 2 + c.x, y: v.height / 2 + c.y },
     r = radarRadius(v) * c.z;
-  const sectors = sectorFootprints(c, v, count);
+  const sectors = contextualSectors(c, v, count);
   const narrowRest =
     v.width < 650 &&
     c.z === 1 &&
@@ -130,6 +165,35 @@ export function layoutRadarLabels(
       },
       candidates = [target],
       occupied = [...obstacles, ...placed];
+    if (c.z > 1.1) {
+      const edgeTargets = [
+        {
+          x: 8,
+          y: bound(sector.anchor.y - height / 2, 8, v.height - height - 8),
+        },
+        {
+          x: v.width - width - 8,
+          y: bound(sector.anchor.y - height / 2, 8, v.height - height - 8),
+        },
+        { x: bound(sector.anchor.x - width / 2, 8, v.width - width - 8), y: 8 },
+        {
+          x: bound(sector.anchor.x - width / 2, 8, v.width - width - 8),
+          y: v.height - height - 8,
+        },
+      ];
+      const nearest = edgeTargets.sort(
+        (a, b) =>
+          Math.hypot(
+            a.x + width / 2 - sector.anchor.x,
+            a.y + height / 2 - sector.anchor.y,
+          ) -
+          Math.hypot(
+            b.x + width / 2 - sector.anchor.x,
+            b.y + height / 2 - sector.anchor.y,
+          ),
+      )[0];
+      Object.assign(target, nearest);
+    }
     if (narrowRest && Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
       target.x = Math.cos(angle) > 0 ? v.width - width - 8 : 8;
       target.y = Math.sin(angle) > 0 ? v.height - height - 8 : 8;
@@ -169,8 +233,21 @@ export function layoutRadarLabels(
         ) >=
         r + 6,
     );
+    const edges = free.filter(
+      (p) =>
+        p.x === 8 ||
+        p.y === 8 ||
+        p.x === v.width - width - 8 ||
+        p.y === v.height - height - 8,
+    );
     const choice = (
-      outside.length ? outside : free.length ? free : candidates
+      c.z > 1.1 && edges.length
+        ? edges
+        : c.z <= 1.1 && outside.length
+          ? outside
+          : free.length
+            ? free
+            : candidates
     ).sort(
       (a, b) =>
         Math.hypot(a.x - target.x, a.y - target.y) -

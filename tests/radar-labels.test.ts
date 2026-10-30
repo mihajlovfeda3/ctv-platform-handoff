@@ -4,6 +4,7 @@ import {
   boxesOverlap,
   layoutRadarLabels,
   sectorFootprints,
+  contextualSectors,
 } from "../src/domain/radar-labels";
 
 it("shows all eight sectors at rest and only the intersecting sector when zoomed into one", () => {
@@ -15,6 +16,26 @@ it("shows all eight sectors at rest and only the intersecting sector when zoomed
     v,
   );
   expect(sectorFootprints(c, v, 8).map((s) => s.index)).toEqual([2]);
+});
+
+it("limits zoomed labels to the focus sector and visible neighbours", () => {
+  const v = { width: 1180, height: 648 };
+  expect(contextualSectors({ z: 1, x: 0, y: 0 }, v, 8)).toHaveLength(8);
+  expect(contextualSectors({ z: 2, x: 0, y: 0 }, v, 8)).toHaveLength(5);
+  expect(contextualSectors({ z: 8, x: 0, y: 0 }, v, 8)).toHaveLength(3);
+  for (let i = 0; i < 8; i++) {
+    const a = ((i + 0.5) * Math.PI) / 4 - Math.PI / 2;
+    const c = clampCamera(
+      { z: 8, x: -Math.cos(a) * 1e8, y: -Math.sin(a) * 1e8 },
+      v,
+    );
+    const labels = contextualSectors(c, v, 8).map((s) => s.index);
+    expect(labels).toContain(i);
+    expect(labels.length).toBeLessThanOrEqual(3);
+    expect(
+      labels.every((n) => sectorFootprints(c, v, 8).some((s) => s.index === n)),
+    ).toBe(true);
+  }
 });
 
 it("keeps geometric annotations in bounds and apart from each other and the reset control", () => {

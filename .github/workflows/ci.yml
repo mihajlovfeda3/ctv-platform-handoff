@@ -71,4 +71,9 @@ jobs:
           npx playwright test tests/browser/navigation-32.spec.ts tests/browser/catalog-polish.spec.ts --project=1440
 
       - name: Radar presentation and camera regression
-        run: npx playwright test tests/browser/radar-ui.spec.ts --project=1440 --project=1920 --project=768
+        run: npx playwright test tests/browser/radar-ui.spec.ts tests/browser/radar-final.spec.ts --project=1440 --project=1920 --project=768
+
+      - name: Radar hierarchy with 2500 PostgreSQL scenarios
+        run: |
+          npm run db:seed -- 2500
+          PERF_SIZE=2500 npx playwright test tests/browser/radar-final.spec.ts --project=1440

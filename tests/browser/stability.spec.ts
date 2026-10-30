@@ -5,6 +5,17 @@ async function settled(page: Page) {
     "aria-busy",
     "false",
   );
+  if (await page.locator(".catalog").count()) {
+    await expect(page.locator(".catalog")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    await page
+      .locator(".catalog")
+      .evaluate((el) =>
+        Promise.all(el.getAnimations().map((a) => a.finished.catch(() => {}))),
+      );
+  }
   if (await page.locator(".analytical-stage").count()) {
     await page
       .locator(".analytical-stage")
@@ -206,12 +217,14 @@ test("inspector open/close, sort/reset and card return preserve intended scroll/
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(returnY, 0);
   await page.keyboard.press("Escape");
   await settled(page);
-  await page.goto("/scenarios/catalog");
-  await expect(page.locator(".catalog tbody tr")).toHaveCount(12);
+  await page.goto("/scenarios/catalog?q=SYN-");
+  await expect(page.locator(".catalog tbody tr")).toHaveCount(25);
   await checkScroll(
     page,
     async () => {
-      await page.locator(".catalog-sort a").nth(1).click();
+      await page
+        .getByRole("link", { name: "Сортировать: Название", exact: true })
+        .click();
       await expect(page).toHaveURL(/sort=name/);
     },
     120,
@@ -221,7 +234,10 @@ test("inspector open/close, sort/reset and card return preserve intended scroll/
     page,
     async () => {
       await page.getByRole("link", { name: "Сбросить", exact: true }).click();
-      await expect(page).not.toHaveURL(/sort=name/);
+      await expect(page).toHaveURL(/sort=name/);
+      await expect
+        .poll(() => new URL(page.url()).searchParams.has("q"))
+        .toBe(false);
     },
     120,
     false,

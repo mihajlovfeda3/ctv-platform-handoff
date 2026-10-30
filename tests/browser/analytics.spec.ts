@@ -46,7 +46,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   await page.goto("/scenarios/radar?q=SYN-&mode=groups");
   const radar = page.locator(".interactive-radar");
   await expect(radar).toBeVisible();
-  await page.locator(".radar-mark").first().click();
+  await page.locator(".radar-group").first().click();
   await expect(page.getByLabel("Состав выбранной группы")).toBeVisible();
   await page.locator(".group-members a").first().click();
   await expect(

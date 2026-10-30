@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { sectorFootprints } from "../../src/domain/radar-labels";
+import { contextualSectors } from "../../src/domain/radar-labels";
 
 async function ready(page: Page) {
   await expect(page.locator(".shared-filters")).toHaveAttribute(
@@ -89,8 +89,7 @@ test("compact default points, lighter labels and contextual information", async 
   await page.keyboard.press("Escape");
   await page.getByRole("link", { name: "Группы", exact: true }).click();
   await expect(page.locator(".radar-mark").first()).toBeVisible();
-  await expect(page.locator("circle[data-scenario]")).toHaveCount(0);
-  await page.locator(".radar-mark").first().press("Enter");
+  await page.locator(".radar-group").first().press("Enter");
   await expect(page.getByLabel("Состав выбранной группы")).toBeVisible();
 });
 
@@ -218,11 +217,13 @@ test("1/3/8x, pan, contextual labels and sidebar keep camera gestures local", as
       x: Number(await c.getAttribute("data-pan-x")),
       y: Number(await c.getAttribute("data-pan-y")),
     };
-    const expected = sectorFootprints(
+    const expected = contextualSectors(
       camera,
       { width: box.width, height: box.height },
       8,
-    ).map((s) => String(s.index));
+    )
+      .map((s) => String(s.index))
+      .sort();
     await expect
       .poll(() =>
         page

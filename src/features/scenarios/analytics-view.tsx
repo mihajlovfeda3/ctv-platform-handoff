@@ -2,6 +2,9 @@
 import { ContextLink as Link } from "./camera-context";
 import { useRadarCamera } from "./use-radar-camera";
 import { radarRadius } from "@/domain/camera";
+import { buildRadarHierarchy } from "@/domain/radar-clusters";
+import { RadarTooltip } from "./radar-tooltip";
+import { RadarMarks } from "./radar-marks";
 import { RadarLabels } from "./radar-labels";
 import { MatrixScatter } from "./matrix-scatter";
 import { useRouter } from "next/navigation";
@@ -9,8 +12,6 @@ import { useCallback, useMemo, useState } from "react";
 import {
   matrixCells,
   radarGroups,
-  pointPosition,
-  pointRadius,
   statusColors,
   type Analytics,
 } from "@/domain/analytics";
@@ -51,134 +52,14 @@ export function AnalyticsView({
   const unknown = data.rows.filter(
     (r) => r.maturity === null || !r.directions.length,
   );
-  const selectedGroup = groups.find((g) => g.key === query.cluster);
+  const hierarchy = useMemo(() => buildRadarHierarchy(data), [data]);
+  const selectedGroup = hierarchy.nodes.get(query.cluster ?? "");
   const memberRows =
     view === "maturity"
       ? cells.get(query.cell ?? "")
       : query.cluster === "unknown"
         ? unknown
         : selectedGroup?.rows;
-  const markers = useMemo(
-    () =>
-      groups.flatMap((group) => {
-        const sector = data.directions.findIndex(
-            (d) => d.id === group.directionId,
-          ),
-          n = data.directions.length;
-        if (query.mode === "groups") {
-          const angle = ((sector + 0.5) * Math.PI * 2) / n - Math.PI / 2,
-            radius = (group.level === 1 ? 0.85 : group.level - 0.5) * 44;
-          const nodeRadius = Math.max(
-              5,
-              Math.min(15, radius * Math.sin(Math.PI / n) - 3),
-            ),
-            circumference = 2 * Math.PI * nodeRadius;
-          const yes = group.rows.filter(
-              (r) => r.implementation === "yes",
-            ).length,
-            no = group.rows.filter((r) => r.implementation === "no").length;
-          return [
-            <g
-              key={group.key}
-              className="radar-mark"
-              role="button"
-              tabIndex={0}
-              aria-label={`Группа: ${data.directions[sector]?.name}, РЗ ${group.level}, ${group.rows.length} сценариев`}
-              onClick={() => {
-                if (!moved.current)
-                  navigate({ cluster: group.key, selected: undefined });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  navigate({ cluster: group.key, selected: undefined });
-                }
-              }}
-              transform={`translate(${340 + Math.cos(angle) * radius} ${290 + Math.sin(angle) * radius})`}
-            >
-              <circle
-                r={nodeRadius + 4}
-                pointerEvents="none"
-                fill="none"
-                stroke={
-                  group.rows.some((r) => r.id === query.selected)
-                    ? "#142a48"
-                    : "transparent"
-                }
-                strokeWidth={2}
-              />
-              <title>{`РЗ ${group.level}: ${group.rows.length} уникальных сценариев`}</title>
-              <circle
-                r={nodeRadius}
-                fill="white"
-                stroke="#8495a5"
-                strokeWidth={4}
-              />
-              <circle
-                r={nodeRadius}
-                fill="none"
-                stroke={statusColors.yes}
-                strokeWidth={4}
-                strokeDasharray={`${(yes / group.rows.length) * circumference} ${circumference}`}
-                transform="rotate(-90)"
-              />
-              <circle
-                r={nodeRadius}
-                fill="none"
-                stroke={statusColors.no}
-                strokeWidth={4}
-                strokeDasharray={`${(no / group.rows.length) * circumference} ${circumference}`}
-                strokeDashoffset={(-yes / group.rows.length) * circumference}
-                transform="rotate(-90)"
-              />
-              <text textAnchor="middle" dy="4" fontSize="10" fill="#244e7e">
-                {group.rows.length}
-              </text>
-            </g>,
-          ];
-        }
-        return group.rows.map((row) => {
-          const p = pointPosition(row.id, sector, n, group.level);
-          return (
-            <circle
-              key={`${group.key}:${row.id}`}
-              className="radar-mark"
-              data-scenario={row.id}
-              role="button"
-              tabIndex={0}
-              aria-label={`${row.externalId}: ${row.name}`}
-              cx={p.x}
-              cy={p.y}
-              r={pointRadius(row.impact)}
-              fill={statusColors[row.implementation]}
-              fillOpacity={0.8}
-              stroke={
-                query.selected === row.id
-                  ? "#142a48"
-                  : row.impact === null
-                    ? "#566675"
-                    : "white"
-              }
-              strokeWidth={query.selected === row.id ? 2.5 : 0.5}
-              strokeDasharray={row.impact === null ? "2 1" : undefined}
-              onClick={() => {
-                if (!moved.current) navigate({ selected: row.id });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  navigate({ selected: row.id });
-                }
-              }}
-            >
-              <title>{`${row.externalId} · ${row.name}\nРЗ ${row.maturity}; ОГ ${row.readiness ?? "неизвестно"}; влияние ${row.impact ?? "неизвестно"}`}</title>
-            </circle>
-          );
-        });
-        // Only camera attributes change during gestures; marker elements are memoized.
-      }),
-    [data, groups, query.mode, query.selected, navigate, moved],
-  );
   return (
     <>
       {view === "radar" ? (
@@ -224,9 +105,10 @@ export function AnalyticsView({
               onPointerCancel={controls.onPointerCancel}
             >
               <defs>
-                <radialGradient id="radar-blue">
-                  <stop stopColor="#bbe5f5" />
-                  <stop offset="1" stopColor="#e9f7fc" />
+                <radialGradient id="radar-blue" cx="44%" cy="40%" r="66%">
+                  <stop stopColor="#b9dfef" />
+                  <stop offset="0.48" stopColor="#d3edf7" />
+                  <stop offset="1" stopColor="#eef8fc" />
                 </radialGradient>
               </defs>
               <g>
@@ -246,12 +128,14 @@ export function AnalyticsView({
                         cy={290}
                         r={level * 44}
                         fill="none"
-                        stroke="#c5deec"
+                        stroke={level === 5 ? "#9bc4db" : "#b4d4e6"}
+                        strokeWidth={level === 5 ? 1.1 : 0.75}
+                        vectorEffect="non-scaling-stroke"
                       />
                       <text
-                        x={340 + level * 44 - 10}
-                        y={286}
-                        fontSize="10"
+                        x={340 + level * 44 - 10 / (baseScale * camera.z)}
+                        y={290 - 5 / (baseScale * camera.z)}
+                        fontSize={10 / (baseScale * camera.z)}
                         fill="#476982"
                       >
                         {level}
@@ -268,18 +152,36 @@ export function AnalyticsView({
                           data-sector={i}
                           data-highlighted={highlight === i || undefined}
                           d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220} A220 220 0 0 1 ${340 + Math.cos(a + (Math.PI * 2) / data.directions.length) * 220} ${290 + Math.sin(a + (Math.PI * 2) / data.directions.length) * 220} Z`}
-                          fill={highlight === i ? "#347cc50c" : "transparent"}
+                          fill={
+                            highlight === i
+                              ? "#3b83bc12"
+                              : i % 2
+                                ? "#ffffff0a"
+                                : "transparent"
+                          }
                           onMouseEnter={() => setHighlight(i)}
                           onMouseLeave={() => setHighlight(null)}
                         />
                         <path
                           d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220}`}
-                          stroke="white"
+                          stroke="#ffffffc4"
+                          strokeWidth={0.9}
+                          vectorEffect="non-scaling-stroke"
                         />
                       </g>
                     );
                   })}
-                  {markers}
+                  <RadarMarks
+                    data={data}
+                    hierarchy={hierarchy}
+                    baseScale={baseScale}
+                    zoom={camera.z}
+                    mode={query.mode}
+                    selected={query.selected}
+                    cluster={query.cluster}
+                    moved={moved}
+                    navigate={navigate}
+                  />
                 </g>
               </g>
             </svg>
@@ -287,6 +189,7 @@ export function AnalyticsView({
               Масштаб: плюс и минус; 0 — сброс. Стрелки — перемещение радара. На
               сенсорном экране используйте кнопки приближения и отдаления.
             </p>
+            <RadarTooltip />
             <RadarLabels
               camera={camera}
               viewport={viewport}
@@ -423,6 +326,21 @@ export function AnalyticsView({
               ×
             </button>
           </div>
+          {view === "radar" && selectedGroup && camera.z < 8 && (
+            <button
+              className="group-zoom-button"
+              onClick={() => {
+                const z = Math.min(8, camera.z * 2);
+                controls.save({
+                  z,
+                  x: -(selectedGroup.x - 340) * baseScale * z,
+                  y: -(selectedGroup.y - 290) * baseScale * z,
+                });
+              }}
+            >
+              Приблизить группу
+            </button>
+          )}
           <div className="group-members">
             {memberRows.map((row) => (
               <Link

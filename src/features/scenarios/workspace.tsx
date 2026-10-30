@@ -93,7 +93,7 @@ export async function Workspace({
                     className="density-switch"
                     aria-label="Плотность визуализации"
                   >
-                    {(["groups", "points"] as const).map((mode) => (
+                    {(["points", "groups"] as const).map((mode) => (
                       <Link
                         replace
                         scroll={false}

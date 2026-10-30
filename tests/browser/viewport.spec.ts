@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { sectorFootprints } from "../../src/domain/radar-labels";
+import { contextualSectors } from "../../src/domain/radar-labels";
 
 // Hundreds of real pointer moves plus card/matrix navigation run in this test.
 // Keep assertion timeouts strict; allow the complete gesture journey on busy CI hosts.
@@ -196,11 +196,13 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
         );
       });
       expect(overlap).toBe(false);
-      const expected = sectorFootprints(
+      const expected = contextualSectors(
         { z: scale, x: geom.x, y: geom.y },
         { width: geom.w, height: geom.h },
         8,
-      ).map((s) => String(s.index));
+      )
+        .map((s) => String(s.index))
+        .sort();
       expect(
         await page
           .locator(".direction-label")

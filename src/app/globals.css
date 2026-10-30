@@ -4056,3 +4056,84 @@ tbody tr:hover {
     transition: none;
   }
 }
+
+/* Radar glyphs retain screen dimensions while the analytical plane zooms. */
+.radar-marker-layer {
+  animation: radar-mode-in 180ms ease-out both;
+}
+@keyframes radar-mode-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.radar-page .radar-point,
+.radar-page .radar-group-surface {
+  transition:
+    fill-opacity 160ms ease-out,
+    stroke 160ms ease-out,
+    fill 160ms ease-out;
+}
+.radar-page .radar-point:hover,
+.radar-page .radar-point:focus-visible {
+  fill-opacity: 1;
+  stroke: #285d8c;
+}
+.radar-page .radar-group:hover .radar-group-surface,
+.radar-page .radar-group:focus-visible .radar-group-surface {
+  fill: #eaf5fc;
+  stroke: #83b2d3;
+}
+.radar-page .radar-group:focus-visible {
+  outline: none;
+}
+.radar-tooltip {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  width: 248px;
+  padding: 10px 12px;
+  border: 1px solid #dfe8f0;
+  border-radius: 7px;
+  background: #ffffffed;
+  color: #3a5771;
+  box-shadow: 0 4px 16px #23425f0f;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.group-zoom-button {
+  margin: 0 16px 12px;
+  padding: 7px 12px;
+  background: #f1f7fc;
+  color: #27669e;
+  border: 1px solid #d5e5f1;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.group-zoom-button:hover {
+  background: #e8f2fb;
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-marker-layer {
+    animation: none;
+  }
+  .radar-page .radar-point,
+  .radar-page .radar-group-surface {
+    transition: none;
+  }
+}
+
+.radar-page .radar-mark:focus {
+  filter: none;
+}
+.radar-page .radar-point:focus-visible {
+  stroke-width: 1.6px;
+}
+
+.radar-page .radar-group:focus {
+  stroke: none;
+  stroke-width: 0;
+}
