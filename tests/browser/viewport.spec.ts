@@ -90,9 +90,11 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     page.getByText("Исследуйте технологии в контексте бизнес-задач"),
   ).toHaveCount(0);
   await expect(page.locator(".analytics-legend")).not.toContainText("Без ОГ");
-  await page.getByText("О выборке", { exact: true }).click();
-  await expect(page.locator(".sample-details")).toContainText("синтетические");
-  await page.getByText("О выборке", { exact: true }).click();
+  await page.getByRole("button", { name: "О диаграмме и выборке" }).click();
+  await expect(page.locator(".radar-info-popover")).toContainText(
+    "синтетические",
+  );
+  await page.keyboard.press("Escape");
   await page.locator(".direction-label").first().hover();
   await expect(
     page.locator(".radar-sector[data-highlighted=true]"),
@@ -124,7 +126,8 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     )
     .toBeCloseTo(40);
   expect(new URL(page.url()).searchParams.has("selected")).toBe(false);
-  await page.getByRole("button", { name: "Сброс масштаба" }).click();
+  await svg.focus();
+  await page.keyboard.press("0");
   for (const scale of [1, 3, 8]) {
     await setZoom(scale);
     await svg.scrollIntoViewIfNeeded();
@@ -178,7 +181,9 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
         const tool = node
           .querySelector(".radar-tools")!
           .getBoundingClientRect();
-        const boxes = [...labels, tool];
+        const boxes = [...labels, tool].filter(
+          (b) => b.width > 0 && b.height > 0,
+        );
         return boxes.some((a, i) =>
           boxes.some(
             (b, j) =>
@@ -212,7 +217,8 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     }
   }
   if (info.project.name === "768") {
-    await page.getByRole("button", { name: "Сброс масштаба" }).click();
+    await svg.focus();
+    await page.keyboard.press("0");
     await setZoom(8);
     await svg.scrollIntoViewIfNeeded();
     const b = (await svg.boundingBox())!;
@@ -230,7 +236,8 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
   }
   expect(requests.length).toBe(initialRequests);
   expect(errors).toEqual([]);
-  await page.getByRole("button", { name: "Сброс масштаба" }).click();
+  await svg.focus();
+  await page.keyboard.press("0");
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768") {
     await capture(
       `docs/screenshots/2b-final-ux/radar-${info.project.name}.jpg`,
@@ -251,7 +258,8 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     );
   }
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768") {
-    await page.getByRole("button", { name: "Сброс масштаба" }).click();
+    await svg.focus();
+    await page.keyboard.press("0");
     await setZoom(8);
     await capture(
       `docs/screenshots/2b-final-ux/radar-8x-${info.project.name}.jpg`,
@@ -273,7 +281,8 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
       `docs/screenshots/2b-final-ux/radar-8x-limit-${info.project.name}.jpg`,
     );
   }
-  await page.getByRole("button", { name: "Сброс масштаба" }).click();
+  await svg.focus();
+  await page.keyboard.press("0");
   await page.locator("circle[data-scenario]").first().press("Enter");
   await expect(
     page.getByRole("region", { name: "Быстрый просмотр сценария" }),
@@ -336,7 +345,9 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     await expect(touchPage).toHaveURL(/zoom=1.25/);
     await touchPage.getByLabel("Отдалить", { exact: true }).tap();
     await expect(touchPage).toHaveURL(/zoom=1&/);
-    await touchPage.getByRole("button", { name: "Сброс масштаба" }).tap();
+    await expect(
+      touchPage.getByRole("button", { name: "Сброс масштаба" }),
+    ).toHaveCount(0);
     await expect(touchPage.locator(".direction-label")).toHaveCount(8);
     await touch.close();
   }

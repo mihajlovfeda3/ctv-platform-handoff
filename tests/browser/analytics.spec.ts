@@ -43,7 +43,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   ).json();
   expect(data.total).toBe(Number(process.env.PERF_SIZE ?? 80));
   expect(data.rows).toHaveLength(data.total);
-  await page.goto("/scenarios/radar?q=SYN-");
+  await page.goto("/scenarios/radar?q=SYN-&mode=groups");
   const radar = page.locator(".interactive-radar");
   await expect(radar).toBeVisible();
   await page.locator(".radar-mark").first().click();
@@ -101,6 +101,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   await expect(
     page.getByRole("region", { name: "Быстрый просмотр сценария" }),
   ).toHaveCount(0);
+  await page.locator(".advanced-filters summary").click();
   await page.locator("[name=maturityMin]").focus();
   await page.keyboard.press("ArrowRight");
   await page.keyboard.up("ArrowRight");
@@ -149,7 +150,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
       path: "docs/screenshots/2b/radar-points.jpg",
       fullPage: true,
     });
-    await page.goto("/scenarios/radar?q=SYN-");
+    await page.goto("/scenarios/radar?q=SYN-&mode=groups");
     await expect(page.locator(".radar-mark").first()).toBeVisible();
     await page.screenshot({
       path: "docs/screenshots/2b/radar-groups.jpg",

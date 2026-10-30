@@ -14,7 +14,10 @@ import {
   statusColors,
   type Analytics,
 } from "@/domain/analytics";
-import { scenarioQuery, type ScenarioQuery } from "@/domain/scenario";
+import { type ScenarioQuery } from "@/domain/scenario";
+import { RadarInfo } from "./radar-info";
+import { RotateCcw } from "lucide-react";
+import { workspaceQuery } from "./filter-state";
 import { workspaceHref, type ScenarioView } from "./navigation";
 
 export function AnalyticsView({
@@ -30,13 +33,12 @@ export function AnalyticsView({
   const navigate = useCallback(
     (patch: Record<string, string | number | undefined>) => {
       // A delayed wheel commit must retain a selection/filter changed meanwhile.
-      const latest = scenarioQuery.safeParse(
+      const latest = workspaceQuery(
         Object.fromEntries(new URL(window.location.href).searchParams),
       );
-      router.replace(
-        workspaceHref(view, latest.success ? latest.data : query, patch),
-        { scroll: false },
-      );
+      router.replace(workspaceHref(view, latest?.query ?? query, patch), {
+        scroll: false,
+      });
     },
     [router, view, query],
   );
@@ -197,9 +199,16 @@ export function AnalyticsView({
                   −
                 </button>
               </div>
-              <button onClick={() => controls.save({ z: 1, x: 0, y: 0 })}>
-                Сброс масштаба
-              </button>
+              {camera.z > 1.000001 && (
+                <button
+                  className="radar-reset"
+                  aria-label="Сброс масштаба"
+                  title="Сброс масштаба"
+                  onClick={() => controls.save({ z: 1, x: 0, y: 0 })}
+                >
+                  <RotateCcw size={16} aria-hidden="true" />
+                </button>
+              )}
             </div>
             <svg
               className="interactive-radar"
@@ -259,7 +268,7 @@ export function AnalyticsView({
                           data-sector={i}
                           data-highlighted={highlight === i || undefined}
                           d={`M340 290 L${340 + Math.cos(a) * 220} ${290 + Math.sin(a) * 220} A220 220 0 0 1 ${340 + Math.cos(a + (Math.PI * 2) / data.directions.length) * 220} ${290 + Math.sin(a + (Math.PI * 2) / data.directions.length) * 220} Z`}
-                          fill={highlight === i ? "#2274c525" : "transparent"}
+                          fill={highlight === i ? "#347cc50c" : "transparent"}
                           onMouseEnter={() => setHighlight(i)}
                           onMouseLeave={() => setHighlight(null)}
                         />
@@ -287,41 +296,36 @@ export function AnalyticsView({
               onHighlight={setHighlight}
             />
           </div>
-          <div className="analytics-legend">
-            <span style={{ color: statusColors.yes }}>● Реализуется</span>
-            <span style={{ color: statusColors.no }}>● Не реализуется</span>
-            <span style={{ color: statusColors.unknown }}>
-              ● Статус неизвестен
-            </span>
-            <span>Размер: влияние 1–3 · пунктир: неизвестно</span>
+          <div className="radar-summary-bar">
+            <div className="analytics-legend" aria-label="Статус реализации">
+              <span>
+                <i style={{ background: statusColors.yes }} />
+                Реализуется
+              </span>
+              <span>
+                <i style={{ background: statusColors.no }} />
+                Не реализуется
+              </span>
+              <span>
+                <i style={{ background: statusColors.unknown }} />
+                Статус неизвестен
+              </span>
+            </div>
+            <div className="radar-summary-actions">
+              <button
+                className="unknown-button"
+                onClick={() =>
+                  navigate({ cluster: "unknown", selected: undefined })
+                }
+              >
+                Без РЗ или направления: {unknown.length}
+              </button>
+              <RadarInfo
+                data={data}
+                markerCount={groups.reduce((n, g) => n + g.rows.length, 0)}
+              />
+            </div>
           </div>
-          <div className="radar-footer">
-            <span className="radar-total">{data.total} сценариев</span>
-            <details className="sample-details">
-              <summary>О выборке</summary>
-              <div>
-                <p>Демонстрационные сценарии, оценки и связи синтетические.</p>
-                <p>
-                  Без ОГ: {data.rows.filter((r) => r.readiness === null).length}{" "}
-                  · без влияния:{" "}
-                  {data.rows.filter((r) => r.impact === null).length}
-                </p>
-                <p>
-                  {groups.reduce((n, g) => n + g.rows.length, 0)} маркеров в
-                  режиме точек. Сценарий с несколькими направлениями показан в
-                  каждом соответствующем секторе.
-                </p>
-              </div>
-            </details>
-          </div>
-          <button
-            className="unknown-button"
-            onClick={() =>
-              navigate({ cluster: "unknown", selected: undefined })
-            }
-          >
-            Без РЗ или направления: {unknown.length}
-          </button>
         </>
       ) : (
         <>

@@ -3736,3 +3736,323 @@ tbody tr:hover {
     animation: none;
   }
 }
+
+/* Radar workspace: catalogue rhythm, with the diagram taking the main stage. */
+.radar-shell {
+  --radar-content-inset: 28px;
+}
+.radar-shell .topbar {
+  height: 48px;
+  padding-inline: var(--radar-content-inset);
+}
+.radar-page {
+  padding: 16px var(--radar-content-inset) 28px;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.radar-page .scenario-heading {
+  margin-bottom: 10px;
+}
+.radar-page .scenario-heading h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+.radar-page .scenario-tabs {
+  margin-bottom: 8px;
+}
+.radar-page .scenario-tabs a {
+  padding-top: 7px;
+  padding-bottom: 8px;
+}
+.radar-page .radar-filters {
+  position: relative;
+  padding: 4px 0 8px;
+  margin-bottom: 12px;
+  border: 0;
+  border-bottom: 1px solid #e6ebf1;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.radar-page .analytical-stage {
+  border-color: #e4eaf1;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.radar-page .analytical-heading {
+  padding: 10px 16px;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #edf1f5;
+}
+.radar-page .analytical-heading p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #5f7489;
+}
+.radar-page .density-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e5ebf2;
+  border-radius: 7px;
+  background: #f2f5f9;
+  flex-shrink: 0;
+}
+.radar-page .density-switch a {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: #657a8e;
+  font-size: 12px;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+.radar-page .density-switch a:hover {
+  color: #245e95;
+  background: #e8eff8;
+}
+.radar-page .density-switch a[aria-current="true"] {
+  background: #fff;
+  color: #1f64a8;
+  box-shadow: 0 1px 3px #21456310;
+}
+.radar-page .radar-viewport {
+  height: clamp(520px, 72vh, 820px);
+}
+.radar-page .radar-tools {
+  top: 10px;
+  right: 12px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+.radar-page .radar-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #ffffffeb;
+  border-color: #dde6ef;
+  border-radius: 6px;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+.radar-page .radar-tools button:hover {
+  background: #edf4fc;
+  border-color: #b5cce2;
+}
+.radar-page .radar-sector {
+  transition: fill 160ms ease-out;
+}
+.radar-page .direction-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 3px 5px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 17px;
+  color: #4b6781;
+}
+.radar-page .direction-label > span {
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: #ffffffa8;
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+.radar-page .direction-label[data-compact] {
+  font-size: 11px;
+  line-height: 14px;
+  padding: 2px 4px;
+}
+.radar-page .direction-label[data-active] {
+  background: transparent;
+  color: #1d619d;
+}
+.radar-page .direction-label[data-active] > span {
+  background: #eaf3fbe0;
+}
+.radar-page .direction-label:focus-visible {
+  outline: 2px solid #619aca;
+  outline-offset: -4px;
+}
+.radar-page .direction-leaders {
+  stroke: #9cb8ca;
+  fill: #9cb8ca;
+  stroke-width: 0.8;
+}
+.radar-page .direction-leaders g {
+  opacity: 0.65;
+  transition:
+    opacity 160ms ease-out,
+    stroke 160ms ease-out,
+    fill 160ms ease-out;
+}
+.radar-page .direction-leaders g.active {
+  opacity: 1;
+  stroke: #528ebc;
+  fill: #528ebc;
+  stroke-width: 1;
+}
+.radar-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 9px 14px;
+  border-top: 1px solid #e9eef4;
+}
+.radar-page .analytics-legend {
+  padding: 0;
+  border: 0;
+  gap: 14px;
+  font-size: 11px;
+  color: #5d7389;
+}
+.radar-page .analytics-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.radar-page .analytics-legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.radar-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.radar-page .unknown-button {
+  margin: 0;
+  padding: 3px 5px;
+  border: 0;
+  background: transparent;
+  color: #56728f;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.radar-page .unknown-button:hover {
+  background: #eff5fb;
+  color: #245e95;
+}
+.radar-info-trigger {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 5px;
+  color: #6f859b;
+  background: transparent;
+  transition:
+    color 140ms ease-out,
+    background-color 140ms ease-out;
+}
+.radar-info-trigger:hover {
+  color: #2166a7;
+  background: #eff5fb;
+}
+.radar-info-popover {
+  position: fixed;
+  inset: auto;
+  width: min(340px, calc(100vw - 32px));
+  margin: 0;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid #dfe7ef;
+  border-radius: 9px;
+  box-shadow: 0 8px 36px #243f5926;
+  background: #fff;
+  color: #4d6680;
+  font:
+    12px/1.65 "Segoe UI",
+    Arial,
+    sans-serif;
+}
+.radar-info-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.radar-info-heading h3 {
+  color: #263f57;
+  font-size: 13px;
+}
+.radar-info-heading button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  color: #74899c;
+  background: transparent;
+}
+.radar-info-heading button:hover {
+  background: #edf3f9;
+}
+.radar-info-popover p {
+  margin-top: 10px;
+}
+.radar-info-origin {
+  padding-top: 10px;
+  border-top: 1px solid #edf1f5;
+  color: #71859a;
+}
+.radar-page .quick-scenarios {
+  margin-top: 12px;
+  border-color: #e4eaf1;
+  box-shadow: none;
+}
+@media (max-width: 800px) {
+  .radar-shell {
+    --radar-content-inset: 18px;
+  }
+  .radar-page .analytical-heading {
+    padding: 8px 12px;
+  }
+  .radar-page .analytical-heading p {
+    max-width: 240px;
+    font-size: 11px;
+  }
+  .radar-page .direction-label {
+    font-size: 11px;
+    line-height: 14px;
+    padding: 2px;
+  }
+  .radar-page .direction-label > span {
+    padding: 2px 4px;
+  }
+  .radar-summary-bar {
+    padding: 8px 12px;
+  }
+  .radar-page .analytics-legend {
+    gap: 8px;
+  }
+}
+@media (any-pointer: coarse) {
+  .radar-page .radar-tools button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-page .radar-sector,
+  .radar-page .direction-label > span,
+  .radar-page .direction-leaders g {
+    transition: none;
+  }
+}

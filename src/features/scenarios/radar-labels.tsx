@@ -25,18 +25,18 @@ export function RadarLabels({
       workspace = node.closest(".scenario-workspace")!;
     const measure = () =>
       setObstacles(
-        [
-          ...workspace.querySelectorAll(".radar-tools, .scenario-inspector"),
-        ].map((n) => {
-          const b = n.getBoundingClientRect();
-          const container = node.getBoundingClientRect();
-          return {
-            x: b.left - container.left,
-            y: b.top - container.top,
-            width: b.width,
-            height: b.height,
-          };
-        }),
+        [...workspace.querySelectorAll(".radar-tools, .scenario-inspector")]
+          .map((n) => {
+            const b = n.getBoundingClientRect();
+            const container = node.getBoundingClientRect();
+            return {
+              x: b.left - container.left,
+              y: b.top - container.top,
+              width: b.width,
+              height: b.height,
+            };
+          })
+          .filter((box) => box.width > 0 && box.height > 0),
       );
     measure();
     const observer = new ResizeObserver(measure);

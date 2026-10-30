@@ -94,11 +94,27 @@ export function layoutRadarLabels(
 ) {
   const width = v.width < 650 ? 138 : 206,
     height =
-      v.width < 650 ? (obstacles.some((b) => b.width > 300) ? 54 : 70) : 64,
+      v.width < 650 ? (obstacles.some((b) => b.width > 300) ? 54 : 64) : 64,
     placed: LabelBox[] = [],
     center = { x: v.width / 2 + c.x, y: v.height / 2 + c.y },
     r = radarRadius(v) * c.z;
-  return sectorFootprints(c, v, count).map((sector) => {
+  const sectors = sectorFootprints(c, v, count);
+  const narrowRest =
+    v.width < 650 &&
+    c.z === 1 &&
+    Math.abs(c.x) < 0.5 &&
+    Math.abs(c.y) < 0.5 &&
+    !obstacles.some((b) => b.width > 300);
+  if (narrowRest) {
+    // On a narrow resting view, give the side sectors first use of the scarce
+    // outside corners; the top/bottom sectors can use the remaining edge space.
+    const sidePriority = (index: number) => {
+      const a = ((index + 0.5) * tau) / count - Math.PI / 2;
+      return Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 0 : 1;
+    };
+    sectors.sort((a, b) => sidePriority(a.index) - sidePriority(b.index));
+  }
+  const labels = sectors.map((sector) => {
     const angle = ((sector.index + 0.5) * tau) / count - Math.PI / 2,
       target = {
         x: bound(
@@ -114,6 +130,10 @@ export function layoutRadarLabels(
       },
       candidates = [target],
       occupied = [...obstacles, ...placed];
+    if (narrowRest && Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
+      target.x = Math.cos(angle) > 0 ? v.width - width - 8 : 8;
+      target.y = Math.sin(angle) > 0 ? v.height - height - 8 : 8;
+    }
     const xs = [8, v.width - width - 8, target.x],
       ys = [8, v.height - height - 8, target.y];
     occupied.forEach((b) => {
@@ -139,7 +159,19 @@ export function layoutRadarLabels(
     const free = candidates.filter(
       (p) => !occupied.some((b) => boxesOverlap({ ...p, width, height }, b, 5)),
     );
-    const choice = (free.length ? free : candidates).sort(
+    // Prefer labels outside the circle; zoomed/obstructed views may have no
+    // outside space, in which case retain the existing collision-safe fallback.
+    const outside = free.filter(
+      (p) =>
+        Math.hypot(
+          bound(center.x, p.x, p.x + width) - center.x,
+          bound(center.y, p.y, p.y + height) - center.y,
+        ) >=
+        r + 6,
+    );
+    const choice = (
+      outside.length ? outside : free.length ? free : candidates
+    ).sort(
       (a, b) =>
         Math.hypot(a.x - target.x, a.y - target.y) -
         Math.hypot(b.x - target.x, b.y - target.y),
@@ -155,4 +187,5 @@ export function layoutRadarLabels(
       },
     };
   });
+  return labels.sort((a, b) => a.index - b.index);
 }

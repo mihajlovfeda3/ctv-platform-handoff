@@ -46,7 +46,7 @@ export async function Workspace({
   const related = item ? await relatedObjects(item.scenario.id) : null;
   return (
     <div
-      className={`page scenarios-page ${view === "catalog" ? "catalog-page" : ""}`}
+      className={`page scenarios-page ${view === "catalog" ? "catalog-page" : view === "radar" ? "radar-page" : ""}`}
     >
       <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
@@ -81,10 +81,10 @@ export async function Workspace({
             <section className="surface analytical-stage">
               <div className="analytical-heading">
                 <div>
-                  <h2>{views[view]}</h2>
+                  {view !== "radar" && <h2>{views[view]}</h2>}
                   <p>
                     {view === "radar"
-                      ? "Рыночная зрелость × технологическое направление"
+                      ? "Рыночная зрелость 1–5 · технологические направления"
                       : "Рыночная зрелость × организационная готовность"}
                   </p>
                 </div>
@@ -148,7 +148,13 @@ export async function Workspace({
             item={item}
             related={related}
             context={query.context}
-            variant={view === "catalog" ? "catalog" : undefined}
+            variant={
+              view === "catalog"
+                ? "catalog"
+                : view === "radar"
+                  ? "radar"
+                  : undefined
+            }
             closeHref={workspaceHref(view, query, { selected: undefined })}
             fullHref={cardHref(item.scenario.id, view, query)}
           />

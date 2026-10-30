@@ -27,6 +27,7 @@ export function ScenarioFilters({
   invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
+  const compact = view === "catalog" || view === "radar";
   const liveParams = useSearchParams();
   const query = {
     ...serverQuery,
@@ -61,7 +62,7 @@ export function ScenarioFilters({
     items: { id: string; name: string }[],
     empty = "Все",
   ) =>
-    view === "catalog" ? (
+    compact ? (
       <div className="filter-field" key={key}>
         <span>{label}</span>
         <Select
@@ -193,11 +194,11 @@ export function ScenarioFilters({
         keys: [key, `${key}Min`, `${key}Max`],
       });
   }
-  if (view !== "catalog" && query.context !== "synthetic-lab")
+  if (!compact && query.context !== "synthetic-lab")
     chips.push({ label: `Контекст: ${query.context}`, keys: ["context"] });
   return (
     <form
-      className={`surface shared-filters ${view === "catalog" ? "catalog-filters" : ""}`}
+      className={`surface shared-filters ${compact ? "catalog-filters" : ""} ${view === "radar" ? "radar-filters" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
         const result = scenarioQuery.safeParse(draft);
@@ -213,7 +214,7 @@ export function ScenarioFilters({
       aria-label="Общие фильтры сценариев"
       aria-busy={pending || !ready}
     >
-      {view === "catalog" ? (
+      {compact ? (
         <div className="shared-filter-row">
           <label className="scenario-search">
             <span>ПОИСК</span>
@@ -249,7 +250,7 @@ export function ScenarioFilters({
             href={workspaceHref(view, {
               context: query.context,
               mode: query.mode,
-              ...(view === "catalog"
+              ...(compact
                 ? {
                     selected: query.selected,
                     sort: query.sort,
@@ -336,7 +337,7 @@ export function ScenarioFilters({
             {message}
           </small>
         ))}
-      {view === "catalog" && chips.length > 0 && (
+      {compact && chips.length > 0 && (
         <div className="filter-chips" aria-label="Активные ограничения">
           {chips.map((chip) => (
             <CameraLink
@@ -370,7 +371,7 @@ export function ScenarioFilters({
           </span>
         </summary>
         <div className="advanced-grid">
-          {view === "catalog" && (
+          {compact && (
             <>
               {field(
                 "blockId",
@@ -389,7 +390,7 @@ export function ScenarioFilters({
             </>
           )}
 
-          {view !== "catalog" && (
+          {!compact && (
             <label>
               <span>Бизнес-процесс / этап</span>
               <select disabled aria-label="Бизнес-процесс / этап">
@@ -402,8 +403,7 @@ export function ScenarioFilters({
             "Функциональная группа",
             references.groups,
           )}
-          {view !== "catalog" &&
-            field("impact", "Влияние: точное значение", options(3))}
+          {!compact && field("impact", "Влияние: точное значение", options(3))}
           {range("impact", "Влияние на бизнес-цели", 3)}
           {view !== "catalog" && (
             <label>

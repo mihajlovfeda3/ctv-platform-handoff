@@ -32,3 +32,9 @@ it("uses 25 rows in the workspace without changing API or explicit legacy pagina
   expect(workspaceQuery({ pageSize: "12" })?.query.pageSize).toBe(12);
   expect(workspaceQuery({ pageSize: "50" })?.query.pageSize).toBe(50);
 });
+
+it("defaults the workspace to points while preserving explicit groups and the API contract", () => {
+  expect(workspaceQuery({})?.query.mode).toBe("points");
+  expect(workspaceQuery({ mode: "groups" })?.query.mode).toBe("groups");
+  expect(scenarioQuery.parse({}).mode).toBe("groups");
+});

@@ -69,3 +69,6 @@ jobs:
         run: |
           npx playwright test tests/browser/catalog-33.spec.ts tests/browser/classification.spec.ts --project=1440 --project=1920 --project=768
           npx playwright test tests/browser/navigation-32.spec.ts tests/browser/catalog-polish.spec.ts --project=1440
+
+      - name: Radar presentation and camera regression
+        run: npx playwright test tests/browser/radar-ui.spec.ts --project=1440 --project=1920 --project=768

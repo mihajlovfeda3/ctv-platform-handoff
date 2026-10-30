@@ -72,3 +72,14 @@ it("fits all annotations beside an open inspector on a narrow viewport", () => {
     );
   });
 });
+
+it("places labels outside the resting circle on the narrow radar workspace", () => {
+  const v = { width: 508, height: 648 };
+  for (const { box } of layoutRadarLabels({ z: 1, x: 0, y: 0 }, v, 8)) {
+    const x = Math.max(box.x, Math.min(v.width / 2, box.x + box.width));
+    const y = Math.max(box.y, Math.min(v.height / 2, box.y + box.height));
+    expect(
+      Math.hypot(x - v.width / 2, y - v.height / 2),
+    ).toBeGreaterThanOrEqual(0.4 * v.width);
+  }
+});

@@ -5,6 +5,13 @@ async function settled(page: Page) {
     "aria-busy",
     "false",
   );
+  if (await page.locator(".analytical-stage").count()) {
+    await page
+      .locator(".analytical-stage")
+      .evaluate((el) =>
+        Promise.all(el.getAnimations().map((a) => a.finished.catch(() => {}))),
+      );
+  }
 }
 async function checkScroll(
   page: Page,
@@ -49,6 +56,7 @@ test("mode preserves scroll, history, selection and context with inspector open/
       "/scenarios/radar?" +
         new URLSearchParams({
           ...search(),
+          mode: "groups",
           ...(inspector ? { selected: id } : {}),
         }),
     );
