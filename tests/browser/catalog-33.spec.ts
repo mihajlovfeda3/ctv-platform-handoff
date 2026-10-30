@@ -5,6 +5,11 @@ async function ready(page: Page) {
     "false",
   );
   await expect(page.locator(".catalog")).toHaveAttribute("aria-busy", "false");
+  await page
+    .locator(".catalog")
+    .evaluate((el) =>
+      Promise.all(el.getAnimations().map((a) => a.finished.catch(() => {}))),
+    );
 }
 test("catalog defaults, sortable headings, paging and consistent scores", async ({
   page,
@@ -87,6 +92,11 @@ test("shared filters, removable constraints and empty state", async ({
     await expect(
       page.locator('.scenario-tabs [aria-current="page"]'),
     ).toHaveText(title);
+    await expect(
+      page.locator(
+        ".scenario-workspace > .catalog, .scenario-workspace > .analytical-stage",
+      ),
+    ).toHaveCSS("animation-duration", "0.18s");
     await expect(page).toHaveURL(/implementation=yes/);
     await expect(page).toHaveURL(/q=SYN-/);
   }
@@ -221,30 +231,34 @@ test("view titles, ID hierarchy and searchable keyboard-accessible filters", asy
   expect(selected).toBeTruthy();
 });
 
-test("sort control, header arrows and actual database ordering agree", async ({
+test("column headers and database ordering agree without a separate sort control", async ({
   page,
   request,
-}) => {
+}, info) => {
   await page.goto("/scenarios/catalog");
   await ready(page);
-  const sorting = page.getByRole("button", { name: "Сортировка", exact: true });
-  await expect(sorting).toHaveText("ID · по возрастанию");
+  await expect(
+    page.getByRole("button", { name: "Сортировка", exact: true }),
+  ).toHaveCount(0);
+  if (info.project.name !== "768")
+    expect(
+      (await page.locator(".scenario-table").boundingBox())!.y,
+    ).toBeLessThan(315);
   for (const [key, label] of [
     ["name", "Название"],
     ["id", "ID"],
-    ["impact", "Влияние"],
+    ["maturity", "РЗ"],
+    ["readiness", "ОГ"],
+    ["impact", "Влияние на бизнес-цели"],
   ]) {
-    for (const [order, description] of [
-      ["asc", "по возрастанию"],
-      ["desc", "по убыванию"],
-    ]) {
-      await sorting.click();
+    for (const order of ["asc", "desc"]) {
       await page
-        .getByRole("option", { name: `${label} · ${description}`, exact: true })
+        .getByRole("link", { name: `Сортировать: ${label}`, exact: true })
         .click();
-      await expect(sorting).toHaveText(`${label} · ${description}`);
       await expect(page).toHaveURL(new RegExp(`sort=${key}`));
-      expect(new URL(page.url()).searchParams.get("order")).toBe(order);
+      await expect
+        .poll(() => new URL(page.url()).searchParams.get("order"))
+        .toBe(order);
       const data = await (
         await request.get(
           `/api/scenarios?sort=${key}&order=${order}&pageSize=25`,
@@ -254,12 +268,23 @@ test("sort control, header arrows and actual database ordering agree", async ({
         "data-scenario-id",
         data.items[0].id,
       );
-      const heading = page.locator(".catalog th").first();
-      await expect(heading).toHaveAttribute(
+      await expect(
+        page.locator(
+          ".catalog th[aria-sort=ascending], .catalog th[aria-sort=descending]",
+        ),
+      ).toHaveCount(1);
+      await expect(page.locator(".catalog th svg")).toHaveCount(1);
+      await expect(
+        page.locator(".catalog th[aria-sort]").filter({
+          has: page.getByRole("link", {
+            name: `Сортировать: ${label}`,
+            exact: true,
+          }),
+        }),
+      ).toHaveAttribute(
         "aria-sort",
-        key === "id" ? (order === "asc" ? "ascending" : "descending") : "none",
+        order === "asc" ? "ascending" : "descending",
       );
-      await expect(heading.locator("svg")).toHaveCount(key === "id" ? 1 : 0);
     }
   }
 });

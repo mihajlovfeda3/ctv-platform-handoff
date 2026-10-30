@@ -91,6 +91,7 @@ test("reduced motion disables menu and slider transitions", async ({
     "transition-duration",
     "0s",
   );
+  await expect(page.locator(".catalog")).toHaveCSS("animation-name", "none");
   await page.locator(".advanced-filters summary").click();
   await expect(page.locator(".range-handle").first()).toHaveCSS(
     "transition-duration",

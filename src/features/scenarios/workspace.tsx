@@ -69,7 +69,7 @@ export async function Workspace({
         view={view}
         invalidDraft={parsed.invalidDraft}
       />
-      <div className="scenario-workspace">
+      <div className="scenario-workspace" key={view}>
         {view === "catalog" ? (
           <ScenarioCatalog
             result={result}
