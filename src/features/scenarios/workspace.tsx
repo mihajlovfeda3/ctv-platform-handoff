@@ -46,7 +46,7 @@ export async function Workspace({
   const related = item ? await relatedObjects(item.scenario.id) : null;
   return (
     <div
-      className={`page scenarios-page ${view === "catalog" ? "catalog-page" : view === "radar" ? "radar-page" : ""}`}
+      className={`page scenarios-page ${view === "catalog" ? "catalog-page" : view === "radar" ? "radar-page" : "matrix-page"}`}
     >
       <RestoreWorkspaceScroll href={workspaceHref(view, query)} />
       <header className="scenario-heading">
@@ -81,7 +81,6 @@ export async function Workspace({
             <section className="surface analytical-stage">
               <div className="analytical-heading">
                 <div>
-                  {view !== "radar" && <h2>{views[view]}</h2>}
                   <p>
                     {view === "radar"
                       ? "Рыночная зрелость 1–5 · технологические направления"
@@ -102,6 +101,28 @@ export async function Workspace({
                         aria-current={query.mode === mode ? "true" : undefined}
                       >
                         {mode === "groups" ? "Группы" : "Точки"}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {view === "maturity" && (
+                  <div
+                    className="density-switch matrix-switch"
+                    aria-label="Режим матрицы зрелости"
+                  >
+                    {(["points", "cells"] as const).map((matrixMode) => (
+                      <Link
+                        key={matrixMode}
+                        replace
+                        scroll={false}
+                        href={workspaceHref(view, query, { matrixMode })}
+                        aria-current={
+                          (query.matrixMode ?? "points") === matrixMode
+                            ? "true"
+                            : undefined
+                        }
+                      >
+                        {matrixMode === "points" ? "Точки" : "Ячейки"}
                       </Link>
                     ))}
                   </div>
@@ -153,7 +174,7 @@ export async function Workspace({
                 ? "catalog"
                 : view === "radar"
                   ? "radar"
-                  : undefined
+                  : "matrix"
             }
             closeHref={workspaceHref(view, query, { selected: undefined })}
             fullHref={cardHref(item.scenario.id, view, query)}

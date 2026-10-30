@@ -10,6 +10,7 @@ import {
   filterDraft,
   filterErrors,
   type FilterDraft,
+  type WorkspaceQuery,
 } from "./filter-state";
 import { scenarioQuery, type ScenarioQuery } from "@/domain/scenario";
 import type { getReferences } from "@/server/scenarios";
@@ -21,13 +22,13 @@ export function ScenarioFilters({
   view,
   invalidDraft,
 }: {
-  query: ScenarioQuery;
+  query: WorkspaceQuery;
   references: Awaited<ReturnType<typeof getReferences>>;
   view: ScenarioView;
   invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
-  const compact = view === "catalog" || view === "radar";
+  const compact = view === "catalog" || view === "radar" || view === "maturity";
   const liveParams = useSearchParams();
   const query = {
     ...serverQuery,
@@ -205,7 +206,14 @@ export function ScenarioFilters({
         if (result.success)
           startTransition(() =>
             router.replace(
-              workspaceHref(view, result.data, { page: undefined }),
+              workspaceHref(view, result.data, {
+                page: undefined,
+                ...(view === "maturity"
+                  ? {
+                      matrixMode: serverQuery.matrixMode,
+                    }
+                  : {}),
+              }),
               { scroll: false },
             ),
           );
@@ -250,6 +258,11 @@ export function ScenarioFilters({
             href={workspaceHref(view, {
               context: query.context,
               mode: query.mode,
+              ...(view === "maturity"
+                ? {
+                    matrixMode: serverQuery.matrixMode,
+                  }
+                : {}),
               ...(compact
                 ? {
                     selected: query.selected,

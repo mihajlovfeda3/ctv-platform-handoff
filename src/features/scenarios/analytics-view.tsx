@@ -6,7 +6,7 @@ import { buildRadarHierarchy } from "@/domain/radar-clusters";
 import { RadarTooltip } from "./radar-tooltip";
 import { RadarMarks } from "./radar-marks";
 import { RadarLabels } from "./radar-labels";
-import { MatrixScatter } from "./matrix-scatter";
+import { MatrixView } from "./matrix-view";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -15,7 +15,7 @@ import {
   statusColors,
   type Analytics,
 } from "@/domain/analytics";
-import { type ScenarioQuery } from "@/domain/scenario";
+import { type WorkspaceQuery } from "./filter-state";
 import { RadarInfo } from "./radar-info";
 import { RotateCcw } from "lucide-react";
 import { workspaceQuery } from "./filter-state";
@@ -27,7 +27,7 @@ export function AnalyticsView({
   view,
 }: {
   data: Analytics;
-  query: ScenarioQuery;
+  query: WorkspaceQuery;
   view: ScenarioView;
 }) {
   const router = useRouter();
@@ -232,74 +232,12 @@ export function AnalyticsView({
         </>
       ) : (
         <>
-          <MatrixScatter data={data} query={query} navigate={navigate} />
-          <div className="analytics-legend">
-            <span style={{ color: statusColors.yes }}>● Реализуется</span>
-            <span style={{ color: statusColors.no }}>● Не реализуется</span>
-            <span style={{ color: statusColors.unknown }}>
-              ● Статус неизвестен
-            </span>
-            <span>Размер — влияние 1–3; пунктир — неизвестно</span>
-            <span>Число в углу сочетания оценок — открыть состав</span>
-          </div>
-          <details className="aggregate-matrix">
-            <summary>Агрегированный просмотр — количества по ячейкам</summary>
-            <div className="matrix-scroll">
-              <table className="maturity-matrix">
-                <caption>
-                  Рыночная зрелость (строки) × организационная готовность
-                  (столбцы)
-                </caption>
-                <thead>
-                  <tr>
-                    <th>РЗ ↓ / ОГ →</th>
-                    {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                      <th key={n}>{n}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[5, 4, 3, 2, 1].map((level) => (
-                    <tr key={level}>
-                      <th>{level}</th>
-                      {[1, 2, 3, 4, 5, 6, 7].map((ready) => {
-                        const key = `${level}:${ready}`,
-                          rows = cells.get(key) ?? [];
-                        return (
-                          <td key={key}>
-                            <button
-                              aria-label={`РЗ ${level}, ОГ ${ready}: ${rows.length}`}
-                              aria-pressed={
-                                query.cell === key ||
-                                rows.some((r) => r.id === query.selected)
-                              }
-                              style={{
-                                background: `rgba(34,116,197,${Math.min(0.65, 0.04 + (rows.length / Math.max(1, data.total)) * 4)})`,
-                              }}
-                              onClick={() =>
-                                navigate({ cell: key, selected: undefined })
-                              }
-                            >
-                              {rows.length}
-                            </button>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-          <button
-            className="unknown-button"
-            onClick={() => navigate({ cell: "unknown", selected: undefined })}
-          >
-            Без РЗ или ОГ: {cells.get("unknown")?.length ?? 0}
-          </button>
-          <span className="matrix-total">
-            Всего уникальных сценариев: {data.total}
-          </span>
+          <MatrixView
+            data={data}
+            cells={cells}
+            query={query}
+            navigate={navigate}
+          />
         </>
       )}
       {!data.total && (
@@ -313,7 +251,9 @@ export function AnalyticsView({
           <div className="inspector-top">
             <h3>
               {view === "maturity"
-                ? `Ячейка ${query.cell}`
+                ? query.cell === "unknown"
+                  ? "Без РЗ или ОГ"
+                  : `РЗ ${query.cell?.split(":")[0]} · ОГ ${query.cell?.split(":")[1]}`
                 : query.cluster === "unknown"
                   ? "Без координат"
                   : "Состав группы"}{" "}
@@ -342,6 +282,9 @@ export function AnalyticsView({
             </button>
           )}
           <div className="group-members">
+            {view === "maturity" && !memberRows.length && (
+              <p className="group-empty">В этой ячейке нет сценариев.</p>
+            )}
             {memberRows.map((row) => (
               <Link
                 key={row.id}

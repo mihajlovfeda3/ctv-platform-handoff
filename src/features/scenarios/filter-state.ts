@@ -1,6 +1,9 @@
 import { scenarioQuery, type ScenarioQuery } from "@/domain/scenario";
 export const scoreFields = ["maturity", "readiness", "impact"] as const;
 export type FilterDraft = Record<string, string>;
+export type WorkspaceQuery = ScenarioQuery & {
+  matrixMode?: "points" | "cells";
+};
 export function filterDraft(query: Partial<ScenarioQuery>): FilterDraft {
   return Object.fromEntries(
     Object.entries(query).map(([key, value]) => [key, String(value ?? "")]),
@@ -39,8 +42,16 @@ export function filterErrors(draft: FilterDraft) {
 /** Only contradictory bounds are recoverable in the workspace. HTTP API stays strict. */
 export function workspaceQuery(raw: Record<string, unknown>) {
   raw = { ...raw, pageSize: raw.pageSize ?? 25, mode: raw.mode ?? "points" };
+  const presentation: { matrixMode?: "points" | "cells" } =
+    raw.matrixMode === "points" || raw.matrixMode === "cells"
+      ? { matrixMode: raw.matrixMode }
+      : {};
   const strict = scenarioQuery.safeParse(raw);
-  if (strict.success) return { query: strict.data, invalidDraft: undefined };
+  if (strict.success)
+    return {
+      query: { ...strict.data, ...presentation },
+      invalidDraft: undefined,
+    };
   if (
     !strict.error.issues.every(
       (i) =>
@@ -57,7 +68,7 @@ export function workspaceQuery(raw: Record<string, unknown>) {
   const parsed = scenarioQuery.safeParse(safe);
   if (!parsed.success) return null;
   return {
-    query: parsed.data,
+    query: { ...parsed.data, ...presentation },
     invalidDraft: {
       ...filterDraft(parsed.data),
       ...Object.fromEntries(

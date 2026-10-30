@@ -18,12 +18,13 @@ export function Inspector({
   closeHref: string;
   fullHref: string;
   context: string;
-  variant?: "catalog" | "radar";
+  variant?: "catalog" | "radar" | "matrix";
 }) {
   const close = useRef<HTMLAnchorElement>(null);
   // Camera/filter/mode changes for the same selection should not steal focus
   // from the control the user just operated. Keep other views intact.
-  const focusKey = variant === "radar" ? item.scenario.id : closeHref;
+  const focusKey =
+    variant === "radar" || variant === "matrix" ? item.scenario.id : closeHref;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     if (variant !== "catalog") close.current?.focus({ preventScroll: true });

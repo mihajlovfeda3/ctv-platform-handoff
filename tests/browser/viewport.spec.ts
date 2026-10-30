@@ -319,17 +319,19 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     .getByRole("link", { name: "Матрица зрелости" })
     .click();
   await expect(page.locator(".matrix-scatter")).toBeVisible();
-  const bad = await page
-    .locator(".matrix-point")
-    .evaluateAll((nodes) =>
-      nodes.some(
-        (n) =>
-          Math.round((Number(n.getAttribute("cx")) - 80) / 100) !==
-            Number(n.getAttribute("data-readiness")) ||
-          Math.round((570 - Number(n.getAttribute("cy"))) / 95) !==
-            Number(n.getAttribute("data-maturity")),
-      ),
+  const bad = await page.locator(".matrix-scatter").evaluate((svg) => {
+    const left = Number(svg.getAttribute("data-plot-left")),
+      bottom = Number(svg.getAttribute("data-plot-bottom")),
+      xStep = Number(svg.getAttribute("data-x-step")),
+      yStep = Number(svg.getAttribute("data-y-step"));
+    return [...svg.querySelectorAll(".matrix-point")].some(
+      (n) =>
+        Math.round((Number(n.getAttribute("cx")) - left) / xStep + 0.5) !==
+          Number(n.getAttribute("data-readiness")) ||
+        Math.round((bottom - Number(n.getAttribute("cy"))) / yStep + 0.5) !==
+          Number(n.getAttribute("data-maturity")),
     );
+  });
   expect(bad).toBe(false);
   await page.keyboard.press("Escape");
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name !== "768")

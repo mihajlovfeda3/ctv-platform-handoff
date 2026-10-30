@@ -97,7 +97,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const active = navigation.find((item) => pathname.startsWith(item.href));
   return (
     <div
-      className={`app-shell ${collapsed ? "nav-collapsed" : ""} ${peek && collapsed ? "nav-peek" : ""} ${pathname === "/overview" ? "overview-shell" : ""} ${pathname === "/scenarios/catalog" ? "catalog-shell" : pathname === "/scenarios/radar" ? "radar-shell" : ""}`}
+      className={`app-shell ${collapsed ? "nav-collapsed" : ""} ${peek && collapsed ? "nav-peek" : ""} ${pathname === "/overview" ? "overview-shell" : ""} ${pathname === "/scenarios/catalog" ? "catalog-shell" : pathname === "/scenarios/radar" ? "radar-shell" : pathname === "/scenarios/maturity" ? "matrix-shell" : ""}`}
     >
       <div
         onPointerLeave={close}

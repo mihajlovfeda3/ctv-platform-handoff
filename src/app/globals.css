@@ -4137,3 +4137,387 @@ tbody tr:hover {
   stroke: none;
   stroke-width: 0;
 }
+/* Maturity workspace follows the accepted light catalogue/radar shell. */
+.matrix-shell {
+  --matrix-content-inset: 28px;
+}
+.matrix-shell .topbar {
+  height: 48px;
+  padding-inline: var(--matrix-content-inset);
+}
+.matrix-page {
+  padding: 16px var(--matrix-content-inset) 28px;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+.matrix-page .scenario-heading {
+  margin-bottom: 10px;
+}
+.matrix-page .scenario-heading h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+.matrix-page .scenario-tabs {
+  margin-bottom: 8px;
+}
+.matrix-page .scenario-tabs a {
+  padding-top: 7px;
+  padding-bottom: 8px;
+}
+.matrix-page .shared-filters {
+  position: relative;
+  padding: 4px 0 8px;
+  margin-bottom: 12px;
+  border: 0;
+  border-bottom: 1px solid #e6ebf1;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.matrix-page .analytical-stage {
+  border-color: #e4eaf1;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.matrix-page .analytical-heading {
+  padding: 10px 16px;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #edf1f5;
+}
+.matrix-page .analytical-heading p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #5f7489;
+}
+.matrix-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e5ebf2;
+  border-radius: 7px;
+  background: #f2f5f9;
+  flex-shrink: 0;
+}
+.matrix-switch a {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: #657a8e;
+  font-size: 12px;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+.matrix-switch a:hover {
+  color: #245e95;
+  background: #e8eff8;
+}
+.matrix-switch a[aria-current="true"] {
+  background: #fff;
+  color: #1f64a8;
+  box-shadow: 0 1px 3px #21456310;
+}
+.matrix-workspace {
+  position: relative;
+  height: clamp(530px, 67vh, 740px);
+  padding: 0 12px;
+}
+.matrix-mode-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: matrix-mode-in 180ms ease-out both;
+}
+@keyframes matrix-mode-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.matrix-page .matrix-scatter {
+  width: 100%;
+  height: 100%;
+  font-size: 12px;
+  overflow: visible;
+}
+.matrix-grid {
+  stroke: #dae5ee;
+  stroke-width: 0.7;
+}
+.matrix-boundaries {
+  fill: none;
+  stroke: #97b2c8;
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+}
+.matrix-axis {
+  fill: none;
+  stroke: #9bb0c2;
+  stroke-width: 1;
+}
+.matrix-tick {
+  fill: #5e7890;
+  font-size: 12px;
+}
+.matrix-tick path {
+  stroke: #9bb0c2;
+  stroke-width: 1;
+}
+.matrix-axis-title {
+  font-size: 12px;
+  fill: #526e88;
+}
+.matrix-page .matrix-zone-title {
+  font-size: 14px;
+  font-weight: 600;
+  fill: #365c7d;
+}
+.matrix-page .matrix-zone-strategy {
+  font-size: 11px;
+  fill: #617d95;
+}
+.matrix-page .matrix-point {
+  transition:
+    fill-opacity 160ms ease-out,
+    stroke 160ms ease-out;
+}
+.matrix-page .matrix-point:hover,
+.matrix-page .matrix-point:focus-visible {
+  fill-opacity: 1;
+  stroke: #2c6394;
+  stroke-width: 1.6;
+}
+.matrix-page .matrix-point:focus {
+  filter: none;
+}
+.matrix-cells-layout {
+  position: relative;
+  height: 100%;
+  padding: 14px 10px 26px 34px;
+  display: grid;
+  grid-template-rows: 28px minmax(0, 1fr);
+}
+.matrix-cell-x-title {
+  color: #526e88;
+  font-size: 12px;
+  text-align: center;
+  padding-left: 46px;
+}
+.matrix-cell-y-title {
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  color: #526e88;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.matrix-cells-layout .matrix-scroll {
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+.matrix-page .maturity-matrix {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.matrix-page .maturity-matrix thead {
+  height: 30px;
+}
+.matrix-page .maturity-matrix td,
+.matrix-page .maturity-matrix th {
+  padding: 4px !important;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: #5e7890;
+}
+.matrix-page .maturity-matrix td:first-child,
+.matrix-page .maturity-matrix th:first-child {
+  width: 46px !important;
+}
+.matrix-page .maturity-matrix caption {
+  margin: 0;
+}
+.matrix-page .maturity-matrix button {
+  min-height: 0;
+  height: 100%;
+  border: 1px solid #dce7ef80;
+  border-radius: 7px;
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #2c6092;
+  transition:
+    box-shadow 160ms ease-out,
+    border-color 160ms ease-out,
+    filter 160ms ease-out;
+}
+.matrix-page .maturity-matrix button[data-empty] {
+  color: #93a4b3;
+}
+.matrix-page .maturity-matrix button:hover {
+  border-color: #a1bfd7;
+  filter: brightness(0.98);
+}
+.matrix-page .maturity-matrix button[aria-pressed="true"] {
+  outline: 0;
+  box-shadow: inset 0 0 0 1.5px #5c97c4;
+  border-color: #5c97c4;
+}
+.matrix-page .maturity-matrix button:focus-visible {
+  outline: 2px solid #397fba;
+  outline-offset: -3px;
+}
+.matrix-tooltip {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  width: 272px;
+  padding: 10px 12px;
+  border: 1px solid #dfe8f0;
+  border-radius: 7px;
+  background: #ffffffef;
+  color: #3a5771;
+  box-shadow: 0 4px 16px #23425f0f;
+  font-size: 11px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.matrix-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 9px 14px;
+  border-top: 1px solid #e9eef4;
+}
+.matrix-page .analytics-legend {
+  display: flex;
+  padding: 0;
+  border: 0;
+  gap: 14px;
+  font-size: 11px;
+  color: #5d7389;
+}
+.matrix-page .analytics-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.matrix-page .analytics-legend i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.matrix-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.matrix-page .matrix-total {
+  font-size: 11px;
+  color: #5d7389;
+  font-variant-numeric: tabular-nums;
+}
+.matrix-page .unknown-button {
+  margin: 0;
+  padding: 3px 5px;
+  border: 0;
+  background: transparent;
+  color: #56728f;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.matrix-page .unknown-button:hover {
+  background: #eff5fb;
+  color: #245e95;
+}
+.matrix-page .quick-scenarios {
+  margin-top: 12px;
+  border-color: #e4eaf1;
+  box-shadow: none;
+}
+.matrix-page .scenario-workspace > .scenario-inspector,
+.matrix-page .analytical-stage > .group-inspector {
+  top: 66px;
+  right: 12px;
+  max-height: min(590px, 65vh);
+  width: 410px;
+  box-shadow: 0 8px 28px #23425f1c;
+  border-color: #dfe7ef;
+}
+.matrix-page .group-inspector .inspector-top h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.matrix-page .group-inspector .inspector-top button {
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  font-size: 22px;
+  color: #6f859b;
+}
+@media (max-width: 800px) {
+  .matrix-shell {
+    --matrix-content-inset: 18px;
+  }
+  .matrix-page .analytical-heading {
+    padding: 8px 12px;
+  }
+  .matrix-page .analytical-heading p {
+    max-width: 220px;
+    font-size: 11px;
+  }
+  .matrix-workspace {
+    padding: 0 4px;
+  }
+  .matrix-page .matrix-zone-title {
+    font-size: 13px;
+  }
+  .matrix-page .matrix-zone-strategy {
+    font-size: 10px;
+  }
+  .matrix-cells-layout {
+    padding-inline: 28px 0;
+  }
+  .matrix-page .maturity-matrix td:first-child,
+  .matrix-page .maturity-matrix th:first-child {
+    width: 30px !important;
+  }
+  .matrix-page .maturity-matrix td,
+  .matrix-page .maturity-matrix th {
+    padding: 3px !important;
+  }
+  .matrix-page .maturity-matrix button {
+    font-size: 19px;
+  }
+  .matrix-page .analytics-legend {
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .matrix-mode-layer {
+    animation: none;
+  }
+  .matrix-switch a,
+  .matrix-page .matrix-point,
+  .matrix-page .maturity-matrix button {
+    transition: none;
+  }
+}

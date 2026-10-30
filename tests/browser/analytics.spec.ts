@@ -31,7 +31,7 @@ test("range handles clamp, preserve legacy links and include unknown at defaults
   await page.locator(".advanced-filters summary").click();
   await expect(
     page.getByLabel("Бизнес-процесс / этап", { exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
 });
 test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card return", async ({
   page,
@@ -118,10 +118,13 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   await expect(page.locator(".matrix-scatter")).toBeVisible();
   await expect(page).toHaveURL(/maturityMin=2/);
   await page
-    .locator(".scatter-cell")
+    .locator(".matrix-switch")
+    .getByRole("link", { name: "Ячейки", exact: true })
+    .click();
+  await page
+    .locator("button[data-cell]")
     .filter({ hasText: /^[1-9]/ })
     .first()
-    .locator(".cell-count")
     .click();
   await expect(page.getByLabel("Состав выбранной группы")).toBeVisible();
   await page.locator(".group-members a").first().click();

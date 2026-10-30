@@ -29,7 +29,8 @@ export default async function ScenarioDetail({
   if (!z.uuid().safeParse(id).success) notFound();
   const item = await getScenario(id);
   if (!item) notFound();
-  const queryResult = scenarioQuery.safeParse(await searchParams);
+  const rawQuery = await searchParams;
+  const queryResult = scenarioQuery.safeParse(rawQuery);
   const query = queryResult.success
     ? queryResult.data
     : scenarioQuery.parse({});
@@ -45,7 +46,15 @@ export default async function ScenarioDetail({
       <Link
         scroll={false}
         className="back-link"
-        href={workspaceHref(query.from, query)}
+        href={workspaceHref(
+          query.from,
+          query,
+          query.from === "maturity" &&
+            (rawQuery.matrixMode === "cells" ||
+              rawQuery.matrixMode === "points")
+            ? { matrixMode: rawQuery.matrixMode }
+            : {},
+        )}
       >
         ← Вернуться к выборке
       </Link>
