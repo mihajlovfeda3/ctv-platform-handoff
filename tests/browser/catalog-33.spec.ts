@@ -367,3 +367,62 @@ test("single impact range, clean advanced filters and dropdown layout", async ({
     ),
   ).toBe(true);
 });
+
+test("catalog sections share one left edge in every sidebar state", async ({
+  page,
+}) => {
+  await page.goto("/scenarios/catalog");
+  await ready(page);
+  const checkAlignment = async () => {
+    const x = await page
+      .locator(".breadcrumb")
+      .evaluate((el) => el.getBoundingClientRect().left);
+    for (const selector of [
+      ".catalog-page h1",
+      ".scenario-tabs",
+      ".catalog-filters",
+      ".scenario-search",
+      ".catalog",
+      ".catalog-count",
+      ".scenario-table",
+    ]) {
+      await expect
+        .poll(async () =>
+          Math.abs((await page.locator(selector).boundingBox())!.x - x),
+        )
+        .toBeLessThan(0.5);
+    }
+  };
+  await checkAlignment();
+  await page
+    .getByRole("button", { name: "Свернуть панель", exact: true })
+    .click();
+  await page.mouse.move(page.viewportSize()!.width - 30, 60);
+  await expect
+    .poll(() =>
+      page
+        .locator(".main-shell")
+        .evaluate((el) => el.getBoundingClientRect().left),
+    )
+    .toBe(76);
+  await checkAlignment();
+  const compactLeft = (await page.locator(".catalog").boundingBox())!.x;
+  await page.mouse.move(1, 350);
+  await expect(page.locator(".nav-peek")).toBeVisible();
+  await checkAlignment();
+  expect((await page.locator(".catalog").boundingBox())!.x).toBe(compactLeft);
+  await page
+    .getByRole("button", { name: "Закрепить панель", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Свернуть панель", exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator(".main-shell")
+        .evaluate((el) => el.getBoundingClientRect().left),
+    )
+    .toBe(224);
+  await checkAlignment();
+});

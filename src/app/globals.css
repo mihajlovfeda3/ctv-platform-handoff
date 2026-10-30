@@ -3199,7 +3199,6 @@ tbody tr:hover {
   margin-bottom: 10px;
 }
 .catalog-page .scenario-heading h1 {
-  transform: translateX(-12px);
   font-size: 28px;
   letter-spacing: -0.7px;
 }
@@ -3690,6 +3689,18 @@ tbody tr:hover {
 }
 
 /* Compact catalog composition; other section headers retain their spacing. */
+.catalog-shell {
+  --catalog-content-inset: 28px;
+}
+.catalog-shell .topbar,
+.catalog-shell .catalog-page {
+  padding-inline: var(--catalog-content-inset);
+}
+@media (max-width: 800px) {
+  .catalog-shell {
+    --catalog-content-inset: 18px;
+  }
+}
 .catalog-shell .topbar {
   height: 48px;
 }

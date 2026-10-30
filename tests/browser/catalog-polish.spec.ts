@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("heading stays offset without moving the table; animated menu and range controls", async ({
+test("heading aligns with the table; animated menu and range controls", async ({
   page,
 }) => {
   await page.goto("/scenarios/catalog");
@@ -10,7 +10,7 @@ test("heading stays offset without moving the table; animated menu and range con
   );
   const heading = (await page.locator("h1").boundingBox())!;
   const table = (await page.locator(".catalog").boundingBox())!;
-  expect(table.x - heading.x).toBe(12);
+  expect(table.x - heading.x).toBe(0);
   const group = page
     .locator(".sidebar")
     .getByRole("link", { name: "Сценарии", exact: true });
