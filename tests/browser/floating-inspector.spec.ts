@@ -68,9 +68,11 @@ for (const view of ["radar", "points", "cells"] as const) {
     if (cameraTransform)
       await expect(camera).toHaveAttribute("transform", cameraTransform);
 
-    await drag(page, title, 269, 336);
+    const midpoint = (top.x + bottom.x) / 2;
+    const titleOffset = (await title.boundingBox())!.x + 10 - top.x;
+    await drag(page, title, midpoint + titleOffset, 336);
     const moved = (await panel.boundingBox())!;
-    expect(Math.abs(moved.x - top.x)).toBeGreaterThan(100);
+    expect(moved.x).toBeCloseTo(midpoint, 0);
     if (
       process.env.SAVE_FLOATING_SCREENSHOTS &&
       info.project.name === "1920" &&

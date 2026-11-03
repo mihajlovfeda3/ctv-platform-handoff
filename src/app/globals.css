@@ -3831,6 +3831,10 @@ tbody tr:hover {
   background: transparent;
   box-shadow: none;
 }
+.radar-page .scenario-workspace:has(> .scenario-inspector) .radar-tools {
+  left: 12px;
+  right: auto;
+}
 .radar-page .radar-tools button {
   display: inline-flex;
   align-items: center;
