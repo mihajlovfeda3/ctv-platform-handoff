@@ -70,7 +70,7 @@ for (const view of ["radar", "points", "cells"] as const) {
 
     await drag(page, title, 269, 336);
     const moved = (await panel.boundingBox())!;
-    expect(Math.abs(moved.x - standard.x)).toBeGreaterThan(100);
+    expect(Math.abs(moved.x - top.x)).toBeGreaterThan(100);
     if (
       process.env.SAVE_FLOATING_SCREENSHOTS &&
       info.project.name === "1920" &&

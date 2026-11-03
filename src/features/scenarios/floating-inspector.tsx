@@ -116,6 +116,7 @@ export function FloatingInspector({
   return createPortal(
     <aside
       ref={panel}
+      data-floating-scenario-inspector
       className={styles.panel}
       style={{ left: position.x, top: position.y }}
       role="region"

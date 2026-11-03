@@ -1,5 +1,6 @@
 "use client";
-import { memo, useMemo, type RefObject } from "react";
+import { memo, useEffect, useMemo, useRef, type RefObject } from "react";
+import { SelectionHalo } from "./selection-halo";
 import {
   pointPosition,
   statusColors,
@@ -25,6 +26,8 @@ export const RadarMarks = memo(function RadarMarks({
   mode,
   selected,
   cluster,
+  viewportMeasured,
+  reveal,
   moved,
   navigate,
 }: {
@@ -35,6 +38,8 @@ export const RadarMarks = memo(function RadarMarks({
   mode: string;
   selected?: string;
   cluster?: string;
+  viewportMeasured: boolean;
+  reveal: (positions: { x: number; y: number }[]) => void;
   moved: RefObject<boolean>;
   navigate: (patch: Record<string, string | number | undefined>) => void;
 }) {
@@ -72,9 +77,37 @@ export const RadarMarks = memo(function RadarMarks({
     [data, hierarchy],
   );
   const entries = mode === "groups" ? groups : points;
+  const picked = useMemo(
+    () =>
+      selected
+        ? entries.filter(({ node }) =>
+            node.rows.some((row) => row.id === selected),
+          )
+        : [],
+    [entries, selected],
+  );
+  const ordered = useMemo(
+    () =>
+      picked.length
+        ? [...entries.filter((entry) => !picked.includes(entry)), ...picked]
+        : entries,
+    [entries, picked],
+  );
+  const lastRevealed = useRef("");
+  useEffect(() => {
+    const key = picked.length ? `${mode}:${selected}` : "";
+    if (!viewportMeasured || key === lastRevealed.current) return;
+    lastRevealed.current = key;
+    reveal(
+      picked.map(({ node, dx, dy }) => ({
+        x: node.x + dx,
+        y: node.y + dy,
+      })),
+    );
+  }, [mode, picked, reveal, selected, viewportMeasured]);
   return (
     <g key={mode} className="radar-marker-layer" data-mode={mode}>
-      {entries.map(({ node, dx, dy }) => {
+      {ordered.map(({ node, dx, dy }) => {
         const row = node.rows[0],
           isGroup = node.rows.length > 1;
         const pick = () => {
@@ -101,17 +134,7 @@ export const RadarMarks = memo(function RadarMarks({
           return (
             <g key={`${node.key}:${row.id}`}>
               {selected === row.id && (
-                <circle
-                  className="radar-selection-halo"
-                  cx={cx}
-                  cy={cy}
-                  r={r + 4 / scale}
-                  fill="#2274c51a"
-                  stroke="#2274c54d"
-                  strokeWidth={1}
-                  vectorEffect="non-scaling-stroke"
-                  pointerEvents="none"
-                />
+                <SelectionHalo cx={cx} cy={cy} r={r + 5 / scale} />
               )}
               <circle
                 className="radar-mark radar-point"
@@ -125,14 +148,8 @@ export const RadarMarks = memo(function RadarMarks({
                 r={r}
                 fill={statusColors[row.implementation]}
                 fillOpacity={0.86}
-                stroke={
-                  selected === row.id
-                    ? "#174d83"
-                    : row.impact === null
-                      ? "#667c90"
-                      : "#fff"
-                }
-                strokeWidth={selected === row.id ? 1.6 : 0.9}
+                stroke={row.impact === null ? "#667c90" : "#fff"}
+                strokeWidth={0.9}
                 vectorEffect="non-scaling-stroke"
                 strokeDasharray={row.impact === null ? "2 2" : undefined}
                 {...events}
@@ -176,14 +193,18 @@ export const RadarMarks = memo(function RadarMarks({
                 pointerEvents="none"
               />
             ) : null}
-            {active && (
-              <circle
-                r={r + 4}
-                fill="#2274c512"
-                stroke="#2274c55c"
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
+            {node.rows.some((row) => row.id === selected) ? (
+              <SelectionHalo cx={0} cy={0} r={r + 5} />
+            ) : (
+              active && (
+                <circle
+                  r={r + 4}
+                  fill="#2274c512"
+                  stroke="#2274c55c"
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )
             )}
             <circle
               className="radar-group-surface"

@@ -22,6 +22,9 @@ export function MatrixCells({
     `РЗ ${maturity}/5 · ОГ ${readiness}/7\nСценариев: ${rows.length}\nРеализуется: ${rows.filter((r) => r.implementation === "yes").length}\nНе реализуется: ${rows.filter((r) => r.implementation === "no").length}\nСтатус неизвестен: ${rows.filter((r) => r.implementation === "unknown").length}`;
   return (
     <div className="matrix-cells-layout">
+      <span id="matrix-selected-cell" hidden>
+        Ячейка выбранного сценария
+      </span>
       <div className="matrix-cell-x-title">Организационная готовность (ОГ)</div>
       <div className="matrix-cell-y-title">Рыночная зрелость (РЗ)</div>
       <div className="matrix-scroll">
@@ -48,15 +51,17 @@ export function MatrixCells({
                 <th scope="row">{level}</th>
                 {[1, 2, 3, 4, 5, 6, 7].map((ready) => {
                   const key = `${level}:${ready}`,
-                    rows = cells.get(key) ?? [];
+                    rows = cells.get(key) ?? [],
+                    selected = rows.some((row) => row.id === query.selected);
                   return (
                     <td key={key}>
                       <button
                         aria-label={`РЗ ${level}, ОГ ${ready}: ${rows.length}`}
-                        aria-pressed={
-                          query.cell === key ||
-                          rows.some((r) => r.id === query.selected)
+                        aria-describedby={
+                          selected ? "matrix-selected-cell" : undefined
                         }
+                        aria-pressed={query.cell === key || selected}
+                        data-selected-scenario={selected || undefined}
                         data-cell={key}
                         data-count={rows.length}
                         data-empty={rows.length === 0 || undefined}

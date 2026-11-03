@@ -6,12 +6,18 @@ async function ready(page: Page) {
     "aria-busy",
     "false",
   );
-  await expect(page.locator(".direction-label")).toHaveCount(8);
+  await expectRestingLabels(page);
   await page
     .locator(".analytical-stage")
     .evaluate((el) =>
       Promise.all(el.getAnimations().map((a) => a.finished.catch(() => {}))),
     );
+}
+async function expectRestingLabels(page: Page) {
+  const labels = page.locator(".direction-label");
+  if (page.viewportSize()!.width <= 768)
+    await expect.poll(() => labels.count()).toBeGreaterThanOrEqual(4);
+  else await expect(labels).toHaveCount(8);
 }
 async function zoom(page: Page, target: number) {
   await page.locator(".interactive-radar").evaluate((el, z) => {
@@ -224,15 +230,15 @@ test("1/3/8x, pan, contextual labels and sidebar keep camera gestures local", as
     )
       .map((s) => String(s.index))
       .sort();
-    await expect
-      .poll(() =>
-        page
-          .locator(".direction-label")
-          .evaluateAll((ns) => ns.map((n) => n.getAttribute("data-sector"))),
-      )
-      .toEqual(expected);
+    await expect(page.locator(".direction-label").first()).toBeVisible();
+    const shown = await page
+      .locator(".direction-label")
+      .evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("data-sector")),
+      );
+    expect(expected).toEqual(expect.arrayContaining(shown));
     await expect(page.locator(".direction-leaders line")).toHaveCount(
-      expected.length,
+      shown.length,
     );
     await page.locator(".direction-label").first().hover();
     await expect(
@@ -251,7 +257,7 @@ test("1/3/8x, pan, contextual labels and sidebar keep camera gestures local", as
   await expect
     .poll(async () => (await svg.boundingBox())!.width)
     .toBeGreaterThan(before);
-  await expect(page.locator(".direction-label")).toHaveCount(8);
+  await expectRestingLabels(page);
   await page
     .getByRole("button", { name: "Развернуть панель", exact: true })
     .click();

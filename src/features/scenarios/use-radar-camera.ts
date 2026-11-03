@@ -1,13 +1,25 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
-import { clampCamera, type Camera, type Viewport } from "@/domain/camera";
+import {
+  clampCamera,
+  radarRadius,
+  type Camera,
+  type Viewport,
+} from "@/domain/camera";
 export function useRadarCamera(view: string) {
   const search = useSearchParams(),
     svg = useRef<SVGSVGElement>(null);
-  const [viewport, setViewport] = useState<Viewport>({
+  const [viewport, setViewport] = useState<Viewport & { measured: boolean }>({
     width: 680,
     height: 580,
+    measured: false,
   });
   const read = (): Camera =>
     clampCamera(
@@ -27,11 +39,11 @@ export function useRadarCamera(view: string) {
   }
   const current = useRef(camera);
   const motion = useRef<{ frame: number; target: Camera } | null>(null);
-  const stopMotion = () => {
+  const stopMotion = useCallback(() => {
     if (motion.current) cancelAnimationFrame(motion.current.frame);
     motion.current = null;
-  };
-  useEffect(() => () => stopMotion(), []);
+  }, []);
+  useEffect(() => () => stopMotion(), [stopMotion]);
   useLayoutEffect(() => {
     current.current = camera;
   }, [camera]);
@@ -42,48 +54,54 @@ export function useRadarCamera(view: string) {
     if (!node) return;
     const resize = new ResizeObserver(() => {
       const r = node.getBoundingClientRect();
-      setViewport({ width: r.width, height: r.height });
+      setViewport({ width: r.width, height: r.height, measured: true });
     });
     resize.observe(node);
     return () => resize.disconnect();
   }, [view]);
-  const save = (c: Camera) => {
-    stopMotion();
-    const safe = clampCamera(c, viewport);
-    current.current = safe;
-    setCamera(safe);
-    const url = new URL(window.location.href);
-    url.searchParams.set("zoom", String(safe.z));
-    url.searchParams.set("panX", String(safe.x));
-    url.searchParams.set("panY", String(safe.y));
-    window.history.replaceState(null, "", url.pathname + url.search);
-  };
-  const animate = (c: Camera) => {
-    stopMotion();
-    const target = clampCamera(c, viewport),
-      start = current.current;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return save(target);
-    const started = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - started) / 170),
-        t = 1 - Math.pow(1 - progress, 3);
-      const next = clampCamera(
-        {
-          z: start.z + (target.z - start.z) * t,
-          x: start.x + (target.x - start.x) * t,
-          y: start.y + (target.y - start.y) * t,
-        },
-        viewport,
-      );
-      current.current = next;
-      setCamera(next);
-      if (progress < 1)
-        motion.current = { target, frame: requestAnimationFrame(tick) };
-      else save(target);
-    };
-    motion.current = { target, frame: requestAnimationFrame(tick) };
-  };
+  const save = useCallback(
+    (c: Camera) => {
+      stopMotion();
+      const safe = clampCamera(c, viewport);
+      current.current = safe;
+      setCamera(safe);
+      const url = new URL(window.location.href);
+      url.searchParams.set("zoom", String(safe.z));
+      url.searchParams.set("panX", String(safe.x));
+      url.searchParams.set("panY", String(safe.y));
+      window.history.replaceState(null, "", url.pathname + url.search);
+    },
+    [stopMotion, viewport],
+  );
+  const animate = useCallback(
+    (c: Camera) => {
+      stopMotion();
+      const target = clampCamera(c, viewport),
+        start = current.current;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+        return save(target);
+      const started = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - started) / 170),
+          t = 1 - Math.pow(1 - progress, 3);
+        const next = clampCamera(
+          {
+            z: start.z + (target.z - start.z) * t,
+            x: start.x + (target.x - start.x) * t,
+            y: start.y + (target.y - start.y) * t,
+          },
+          viewport,
+        );
+        current.current = next;
+        setCamera(next);
+        if (progress < 1)
+          motion.current = { target, frame: requestAnimationFrame(tick) };
+        else save(target);
+      };
+      motion.current = { target, frame: requestAnimationFrame(tick) };
+    },
+    [save, stopMotion, viewport],
+  );
   useEffect(() => {
     const node = svg.current;
     if (!node) return;
@@ -102,13 +120,35 @@ export function useRadarCamera(view: string) {
     };
     node.addEventListener("wheel", wheel, { passive: false });
     return () => node.removeEventListener("wheel", wheel);
-  });
+  }, [animate]);
+  const reveal = useCallback(
+    (positions: { x: number; y: number }[]) => {
+      const { width, height } = viewport;
+      const old = motion.current?.target ?? current.current;
+      const scale = (radarRadius(viewport) * old.z) / 220;
+      const margin = 26;
+      let nearest: { dx: number; dy: number; distance: number } | undefined;
+      for (const position of positions) {
+        const x = width / 2 + old.x + (position.x - 340) * scale;
+        const y = height / 2 + old.y + (position.y - 290) * scale;
+        const dx = Math.min(width - margin, Math.max(margin, x)) - x;
+        const dy = Math.min(height - margin, Math.max(margin, y)) - y;
+        const distance = Math.hypot(dx, dy);
+        if (!nearest || distance < nearest.distance)
+          nearest = { dx, dy, distance };
+      }
+      if (nearest && nearest.distance > 0)
+        animate({ ...old, x: old.x + nearest.dx, y: old.y + nearest.dy });
+    },
+    [animate, viewport],
+  );
   return {
     svg,
     viewport,
     camera,
     moved,
     save,
+    reveal,
     zoom: (factor: number) => {
       const old = motion.current?.target ?? current.current,
         z = Math.max(1, Math.min(8, old.z * factor));

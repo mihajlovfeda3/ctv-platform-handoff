@@ -22,6 +22,7 @@ export function MatrixView({
 }) {
   const mode = query.matrixMode ?? "points",
     unknown = cells.get("unknown")?.length ?? 0;
+  const selected = data.rows.find((row) => row.id === query.selected);
   return (
     <>
       <div className="matrix-workspace" data-testid="matrix-workspace">
@@ -55,6 +56,14 @@ export function MatrixView({
           </span>
         </div>
         <div className="matrix-summary-actions">
+          {query.selected &&
+            (!selected ||
+              selected.maturity === null ||
+              selected.readiness === null) && (
+              <span className="analytics-selection-note" role="status">
+                Выбранный сценарий не отображается в матрице
+              </span>
+            )}
           <span className="matrix-total" data-total={data.total}>
             {data.total} сценариев
           </span>

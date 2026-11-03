@@ -78,15 +78,19 @@ it("keeps geometric annotations in bounds and apart from each other and the rese
   }
 });
 
-it("fits all annotations beside an open inspector on a narrow viewport", () => {
+it("omits blocked annotations instead of moving them across the radar", () => {
   const v = { width: 560, height: 520 };
   const obstacles = [
     { x: 400, y: 12, width: 144, height: 42 },
     { x: 176, y: 65, width: 370, height: 480 },
   ];
   const labels = layoutRadarLabels({ z: 1, x: 0, y: 0 }, v, 8, obstacles);
-  expect(labels).toHaveLength(8);
-  labels.forEach(({ box }, i) => {
+  expect(labels.length).toBeGreaterThan(0);
+  expect(labels.length).toBeLessThan(8);
+  labels.forEach(({ box, anchor, end }, i) => {
+    expect(Math.hypot(end.x - anchor.x, end.y - anchor.y)).toBeLessThanOrEqual(
+      120,
+    );
     expect(obstacles.some((b) => boxesOverlap(box, b))).toBe(false);
     expect(labels.some((l, j) => i !== j && boxesOverlap(box, l.box))).toBe(
       false,
@@ -102,5 +106,40 @@ it("places labels outside the resting circle on the narrow radar workspace", () 
     expect(
       Math.hypot(x - v.width / 2, y - v.height / 2),
     ).toBeGreaterThanOrEqual(0.4 * v.width);
+  }
+});
+
+it("keeps every direction readable with the desktop inspector open", () => {
+  for (const [width, height] of [
+    [1084, 553],
+    [1158, 648],
+    [1638, 778],
+  ]) {
+    const inspector = {
+      x: width - 424,
+      y: 10,
+      width: 410,
+      height: height - 75,
+    };
+    const labels = layoutRadarLabels(
+      { z: 1, x: 0, y: 0 },
+      { width, height },
+      8,
+      [inspector],
+    );
+    expect(labels).toHaveLength(8);
+    expect(labels.some(({ box }) => box.height === 54)).toBe(true);
+    for (const { box, anchor, end, index } of labels) {
+      expect(boxesOverlap(box, inspector)).toBe(false);
+      expect(
+        Math.hypot(end.x - anchor.x, end.y - anchor.y),
+      ).toBeLessThanOrEqual(120);
+      const angle =
+        (Math.atan2(anchor.y - height / 2, anchor.x - width / 2) +
+          Math.PI / 2 +
+          2 * Math.PI) %
+        (2 * Math.PI);
+      expect(Math.floor(angle / (Math.PI / 4))).toBe(index);
+    }
   }
 });

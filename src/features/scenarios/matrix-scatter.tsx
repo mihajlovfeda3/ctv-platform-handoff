@@ -1,4 +1,5 @@
 "use client";
+import { SelectionHalo } from "./selection-halo";
 import { useLayoutEffect, useRef, useState } from "react";
 import { matrixPosition } from "@/domain/camera";
 import {
@@ -48,6 +49,13 @@ export function MatrixScatter({
       .map(([, rows]) => rows.length),
   );
   const density = matrixDensityScale(maxCount, plot.xStep * plot.yStep);
+  const points = data.rows.filter(
+    (row) => row.maturity !== null && row.readiness !== null,
+  );
+  const selected = points.find((row) => row.id === query.selected);
+  const ordered = selected
+    ? [...points.filter((row) => row !== selected), selected]
+    : points;
   return (
     <svg
       ref={svg}
@@ -180,65 +188,49 @@ export function MatrixScatter({
         );
       })}
       <g className="matrix-points-layer">
-        {data.rows
-          .filter((r) => r.maturity !== null && r.readiness !== null)
-          .map((row) => {
-            const p = matrixPosition(row.id, row.maturity!, row.readiness!);
-            const x = plot.x(p.x),
-              y = plot.y(p.y),
-              r = pointRadius(row.impact) * density;
-            const tip = `${row.name}\nРЗ ${row.maturity}/5 · ОГ ${row.readiness}/7 · влияние ${row.impact === null ? "неизвестно" : `${row.impact}/3`}\n${implementationLabels[row.implementation as keyof typeof implementationLabels]}`;
-            const pick = () => navigate({ selected: row.id });
-            return (
-              <g key={row.id}>
-                {query.selected === row.id && (
-                  <circle
-                    className="matrix-selection-halo"
-                    cx={x}
-                    cy={y}
-                    r={r + 4}
-                    fill="#2274c51a"
-                    stroke="#2274c55c"
-                    pointerEvents="none"
-                  />
-                )}
-                <circle
-                  role="button"
-                  tabIndex={0}
-                  className="matrix-point"
-                  data-scenario={row.id}
-                  data-maturity={row.maturity}
-                  data-readiness={row.readiness}
-                  data-matrix-tip={tip}
-                  cx={x}
-                  cy={y}
-                  r={r}
-                  fill={statusColors[row.implementation]}
-                  fillOpacity={density < 0.8 ? 0.72 : 0.86}
-                  stroke={
-                    query.selected === row.id
-                      ? "#174d83"
-                      : row.impact === null
-                        ? "#667c90"
-                        : "white"
+        {ordered.map((row) => {
+          const p = matrixPosition(row.id, row.maturity!, row.readiness!);
+          const x = plot.x(p.x),
+            y = plot.y(p.y),
+            r = pointRadius(row.impact) * density;
+          const tip = `${row.name}\nРЗ ${row.maturity}/5 · ОГ ${row.readiness}/7 · влияние ${row.impact === null ? "неизвестно" : `${row.impact}/3`}\n${implementationLabels[row.implementation as keyof typeof implementationLabels]}`;
+          const pick = () => navigate({ selected: row.id });
+          return (
+            <g key={row.id}>
+              {query.selected === row.id && (
+                <SelectionHalo cx={x} cy={y} r={r + 5} />
+              )}
+              <circle
+                role="button"
+                tabIndex={0}
+                className="matrix-point"
+                data-scenario={row.id}
+                data-maturity={row.maturity}
+                data-readiness={row.readiness}
+                data-matrix-tip={tip}
+                cx={x}
+                cy={y}
+                r={r}
+                fill={statusColors[row.implementation]}
+                fillOpacity={density < 0.8 ? 0.72 : 0.86}
+                stroke={row.impact === null ? "#667c90" : "white"}
+                strokeWidth={0.8}
+                strokeDasharray={row.impact === null ? "2 2" : undefined}
+                aria-label={`${row.externalId}: ${tip}`}
+                aria-pressed={query.selected === row.id}
+                onClick={pick}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    pick();
                   }
-                  strokeWidth={query.selected === row.id ? 1.6 : 0.8}
-                  strokeDasharray={row.impact === null ? "2 2" : undefined}
-                  aria-label={`${row.externalId}: ${tip}`}
-                  aria-pressed={query.selected === row.id}
-                  onClick={pick}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      pick();
-                    }
-                  }}
-                >
-                  <desc>{tip}</desc>
-                </circle>
-              </g>
-            );
-          })}
+                }}
+              >
+                <desc>{tip}</desc>
+              </circle>
+            </g>
+          );
+        })}
       </g>
     </svg>
   );

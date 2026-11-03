@@ -86,6 +86,42 @@ export function boxesOverlap(a: LabelBox, b: LabelBox, gap = 0) {
   );
 }
 
+function leaderCrossesBox(start: Point, end: Point, box: LabelBox) {
+  let enter = 0,
+    exit = 1;
+  for (const [axis, size] of [
+    ["x", "width"],
+    ["y", "height"],
+  ] as const) {
+    const delta = end[axis] - start[axis];
+    if (delta === 0) {
+      if (start[axis] < box[axis] || start[axis] > box[axis] + box[size])
+        return false;
+      continue;
+    }
+    const a = (box[axis] - start[axis]) / delta;
+    const b = (box[axis] + box[size] - start[axis]) / delta;
+    enter = Math.max(enter, Math.min(a, b));
+    exit = Math.min(exit, Math.max(a, b));
+    if (enter > exit) return false;
+  }
+  return true;
+}
+
+function distanceFromLeader(point: Point, start: Point, end: Point) {
+  const dx = end.x - start.x,
+    dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared
+    ? bound(
+        ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared,
+        0,
+        1,
+      )
+    : 0;
+  return Math.hypot(point.x - start.x - t * dx, point.y - start.y - t * dy);
+}
+
 export function contextualSectors(c: Camera, v: Viewport, count: number) {
   const visible = sectorFootprints(c, v, count);
   if (c.z <= 1.1) return visible;
@@ -149,7 +185,7 @@ export function layoutRadarLabels(
     };
     sectors.sort((a, b) => sidePriority(a.index) - sidePriority(b.index));
   }
-  const labels = sectors.map((sector) => {
+  const labels = sectors.flatMap((sector) => {
     const angle = ((sector.index + 0.5) * tau) / count - Math.PI / 2,
       target = {
         x: bound(
@@ -217,52 +253,157 @@ export function layoutRadarLabels(
     );
     // Candidate grid is only a collision fallback; positions are ranked by
     // distance to this sector's projected circumference, never a fixed rail.
-    for (let x = 8; x <= v.width - width - 8; x += 22)
-      for (let y = 8; y <= v.height - height - 8; y += 18)
+    const reach = 120;
+    for (
+      let x = Math.max(8, sector.anchor.x - reach - width);
+      x <= Math.min(v.width - width - 8, sector.anchor.x + reach);
+      x += 22
+    )
+      for (
+        let y = Math.max(8, sector.anchor.y - reach - height);
+        y <= Math.min(v.height - height - 8, sector.anchor.y + reach);
+        y += 18
+      )
         candidates.push({ x, y });
     const free = candidates.filter(
       (p) => !occupied.some((b) => boxesOverlap({ ...p, width, height }, b, 5)),
     );
-    // Prefer labels outside the circle; zoomed/obstructed views may have no
-    // outside space, in which case retain the existing collision-safe fallback.
-    const outside = free.filter(
-      (p) =>
-        Math.hypot(
-          bound(center.x, p.x, p.x + width) - center.x,
-          bound(center.y, p.y, p.y + height) - center.y,
-        ) >=
-        r + 6,
-    );
-    const edges = free.filter(
-      (p) =>
-        p.x === 8 ||
-        p.y === 8 ||
-        p.x === v.width - width - 8 ||
-        p.y === v.height - height - 8,
-    );
-    const choice = (
-      c.z > 1.1 && edges.length
-        ? edges
-        : c.z <= 1.1 && outside.length
-          ? outside
-          : free.length
-            ? free
-            : candidates
-    ).sort(
-      (a, b) =>
-        Math.hypot(a.x - target.x, a.y - target.y) -
-        Math.hypot(b.x - target.x, b.y - target.y),
-    )[0];
+    const leaderEnd = (p: Point) => ({
+      x: bound(sector.anchor.x, p.x, p.x + width),
+      y: bound(sector.anchor.y, p.y, p.y + height),
+    });
+    const choice = free
+      .filter((p) => {
+        const end = leaderEnd(p);
+        if (
+          Math.hypot(end.x - sector.anchor.x, end.y - sector.anchor.y) >
+            reach ||
+          obstacles.some((b) => leaderCrossesBox(sector.anchor, end, b))
+        )
+          return false;
+        if (c.z > 1.1) {
+          const anchorDistance = Math.hypot(
+            sector.anchor.x - center.x,
+            sector.anchor.y - center.y,
+          );
+          return (
+            distanceFromLeader(center, sector.anchor, end) >=
+            Math.min(anchorDistance, 56) - 0.01
+          );
+        }
+        const dx = end.x - center.x,
+          dy = end.y - center.y;
+        // At rest the whole label stays outside the circle, with the leader
+        // pointing outward from its own sector instead of crossing the plot.
+        return (
+          Math.hypot(
+            bound(center.x, p.x, p.x + width) - center.x,
+            bound(center.y, p.y, p.y + height) - center.y,
+          ) >=
+            r + 6 && dx * Math.cos(angle) + dy * Math.sin(angle) >= r * 0.76
+        );
+      })
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - target.x, a.y - target.y) -
+          Math.hypot(b.x - target.x, b.y - target.y),
+      )[0];
+    if (!choice) return [];
     const box = { ...choice, width, height };
     placed.push(box);
-    return {
-      ...sector,
-      box,
-      end: {
-        x: bound(sector.anchor.x, box.x, box.x + width),
-        y: bound(sector.anchor.y, box.y, box.y + height),
+    return [
+      {
+        ...sector,
+        box,
+        end: leaderEnd(box),
+        inspectorFit: false,
       },
-    };
+    ];
   });
+  // The expanded inspector can hide the perimeter at 1×. Give an obstructed
+  // sector a smaller label beside a visible point on that same sector.
+  if (c.z <= 1.1 && obstacles.some((box) => box.width > 300)) {
+    const compactWidth = 132,
+      compactHeight = 54;
+    for (const sector of sectors) {
+      if (labels.some((label) => label.index === sector.index)) continue;
+      const occupied = [...obstacles, ...placed];
+      let best: (typeof labels)[number] | undefined;
+      let bestScore = Infinity;
+      for (const fraction of [0.5, 0.25, 0.75]) {
+        const angle = ((sector.index + fraction) * tau) / count - Math.PI / 2;
+        for (const radial of [0.94, 0.78, 0.62, 0.46, 0.3]) {
+          const anchor = {
+            x: center.x + Math.cos(angle) * r * radial,
+            y: center.y + Math.sin(angle) * r * radial,
+          };
+          if (
+            anchor.x < 0 ||
+            anchor.x > v.width ||
+            anchor.y < 0 ||
+            anchor.y > v.height ||
+            obstacles.some((box) => leaderCrossesBox(anchor, anchor, box))
+          )
+            continue;
+          for (const horizontal of [-1, 0, 1])
+            for (const vertical of [-1, 0, 1]) {
+              if (!horizontal && !vertical) continue;
+              const box = {
+                x: bound(
+                  anchor.x -
+                    compactWidth / 2 +
+                    horizontal * (compactWidth / 2 + 11),
+                  8,
+                  v.width - compactWidth - 8,
+                ),
+                y: bound(
+                  anchor.y -
+                    compactHeight / 2 +
+                    vertical * (compactHeight / 2 + 11),
+                  8,
+                  v.height - compactHeight - 8,
+                ),
+                width: compactWidth,
+                height: compactHeight,
+              };
+              if (occupied.some((other) => boxesOverlap(box, other, 5)))
+                continue;
+              const end = {
+                x: bound(anchor.x, box.x, box.x + box.width),
+                y: bound(anchor.y, box.y, box.y + box.height),
+              };
+              const length = Math.hypot(end.x - anchor.x, end.y - anchor.y);
+              const distanceFromCenter = Math.hypot(
+                bound(center.x, box.x, box.x + box.width) - center.x,
+                bound(center.y, box.y, box.y + box.height) - center.y,
+              );
+              if (
+                length < 5 ||
+                length > 38 ||
+                distanceFromCenter < Math.min(52, r * 0.28) ||
+                obstacles.some((other) => leaderCrossesBox(anchor, end, other))
+              )
+                continue;
+              const score =
+                length +
+                Math.max(0, r - distanceFromCenter) * 0.7 +
+                Math.hypot(
+                  anchor.x - sector.anchor.x,
+                  anchor.y - sector.anchor.y,
+                ) *
+                  0.35;
+              if (score < bestScore) {
+                best = { ...sector, anchor, box, end, inspectorFit: true };
+                bestScore = score;
+              }
+            }
+        }
+      }
+      if (best) {
+        placed.push(best.box);
+        labels.push(best);
+      }
+    }
+  }
   return labels.sort((a, b) => a.index - b.index);
 }

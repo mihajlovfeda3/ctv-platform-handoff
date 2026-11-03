@@ -53,6 +53,11 @@ export function AnalyticsView({
     (r) => r.maturity === null || !r.directions.length,
   );
   const hierarchy = useMemo(() => buildRadarHierarchy(data), [data]);
+  const selectionIsPlotted =
+    query.selected &&
+    hierarchy.roots.some((root) =>
+      root.rows.some((row) => row.id === query.selected),
+    );
   const selectedGroup = hierarchy.nodes.get(query.cluster ?? "");
   const memberRows =
     view === "maturity"
@@ -179,6 +184,8 @@ export function AnalyticsView({
                     mode={query.mode}
                     selected={query.selected}
                     cluster={query.cluster}
+                    viewportMeasured={viewport.measured}
+                    reveal={controls.reveal}
                     moved={moved}
                     navigate={navigate}
                   />
@@ -194,7 +201,6 @@ export function AnalyticsView({
               camera={camera}
               viewport={viewport}
               directions={data.directions}
-              inspectorOpen={Boolean(query.selected || memberRows)}
               highlight={highlight}
               onHighlight={setHighlight}
             />
@@ -215,6 +221,11 @@ export function AnalyticsView({
               </span>
             </div>
             <div className="radar-summary-actions">
+              {query.selected && !selectionIsPlotted && (
+                <span className="analytics-selection-note" role="status">
+                  Выбранный сценарий не отображается на радаре
+                </span>
+              )}
               <button
                 className="unknown-button"
                 onClick={() =>

@@ -3875,6 +3875,16 @@ tbody tr:hover {
   line-height: 14px;
   padding: 2px 4px;
 }
+.radar-page .direction-label[data-inspector-fit] {
+  font-size: 10.5px;
+  line-height: 12px;
+  padding: 1px 3px;
+}
+.radar-page .direction-label[data-inspector-fit] > span {
+  -webkit-line-clamp: 4;
+  padding: 2px 4px;
+  background: #f5fbffed;
+}
 .radar-page .direction-label[data-active] {
   background: transparent;
   color: #1d619d;
@@ -4376,6 +4386,15 @@ tbody tr:hover {
   outline: 0;
   box-shadow: inset 0 0 0 1.5px #5c97c4;
   border-color: #5c97c4;
+}
+.matrix-page .maturity-matrix button[data-selected-scenario] {
+  box-shadow: inset 0 0 0 2px #174d83;
+  border-color: #174d83;
+}
+.radar-page .analytics-selection-note,
+.matrix-page .analytics-selection-note {
+  color: #49657f;
+  font-size: 11px;
 }
 .matrix-page .maturity-matrix button:focus-visible {
   outline: 2px solid #397fba;
