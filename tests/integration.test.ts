@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle as pgliteDrizzle } from "drizzle-orm/pglite";
 import { migrate as pgliteMigrate } from "drizzle-orm/pglite/migrator";
@@ -91,6 +92,68 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
       (await db.select({ total: count() }).from(s.scenarioTechnologies))[0]
         .total,
     ).toBe(80);
+  });
+  it("исправляет только старое название генератора и сохраняет идентификаторы", async () => {
+    const migration = readFileSync(
+      "src/db/migrations/0003_clean_generated_scenario_names.sql",
+      "utf8",
+    );
+    await expect(
+      db.transaction(async (tx) => {
+        const [item] = await tx
+          .select()
+          .from(s.scenarios)
+          .where(eq(s.scenarios.externalId, "SYN-0001"));
+        expect(item.name).not.toMatch(/ · \d+$/);
+        const legacyTitle = `${item.name} · 001`;
+        await tx
+          .update(s.scenarios)
+          .set({ name: legacyTitle })
+          .where(eq(s.scenarios.id, item.id));
+        const [imported] = await tx
+          .insert(s.scenarios)
+          .values({
+            externalId: "SYN-0001",
+            originNamespace: "migration-test-import",
+            name: legacyTitle,
+            description: "Импортированная запись.",
+            isSynthetic: false,
+          })
+          .returning();
+        const customTitle = "Калибровка измерительной установки · 002";
+        const custom = eq(s.scenarios.externalId, "SYN-0002");
+        await tx.update(s.scenarios).set({ name: customTitle }).where(custom);
+        await tx.execute(sql.raw(migration));
+        await tx.execute(sql.raw(migration));
+        expect(
+          (
+            await tx
+              .select()
+              .from(s.scenarios)
+              .where(eq(s.scenarios.id, item.id))
+          )[0],
+        ).toMatchObject({
+          id: item.id,
+          externalId: item.externalId,
+          name: item.name,
+        });
+        expect(
+          (
+            await tx
+              .select()
+              .from(s.scenarios)
+              .where(eq(s.scenarios.id, imported.id))
+          )[0].name,
+        ).toBe(legacyTitle);
+        expect(
+          (await tx.select().from(s.scenarios).where(custom))[0].name,
+        ).toBe(customTitle);
+        expect(
+          (await tx.select({ total: count() }).from(s.scenarios))[0].total,
+        ).toBe(81);
+        tx.rollback();
+      }),
+    ).rejects.toThrow("Rollback");
   });
   it("разделяет классификаторы и совместно фильтрует блок, бизнес и технологию", async () => {
     const refs = await getReferences(db);

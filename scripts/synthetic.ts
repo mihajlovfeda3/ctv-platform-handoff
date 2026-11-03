@@ -145,7 +145,7 @@ export function generateDataset(size = 80, seed = SYNTHETIC_SEED) {
     return {
       ...meta(
         `scenario:${i}`,
-        `${actions[i % 5]} в процессе «${business[group * 3 + 1].name.toLowerCase()}» · ${String(i + 1).padStart(3, "0")}`,
+        `${actions[i % 5]} в процессе «${business[group * 3 + 1].name.toLowerCase()}»`,
       ),
       externalId: `SYN-${String(i + 1).padStart(4, "0")}`,
       originNamespace: `synthetic-v1-${seed}`,

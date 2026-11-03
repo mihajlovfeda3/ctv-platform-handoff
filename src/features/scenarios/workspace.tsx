@@ -25,7 +25,13 @@ export async function Workspace({
   view: ScenarioView;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const parsed = workspaceQuery(await searchParams);
+  const raw = await searchParams;
+  // Keep the API's legacy ID sorting available while normalizing old catalogue links.
+  const parsed = workspaceQuery(
+    view === "catalog" && (raw.sort === undefined || raw.sort === "id")
+      ? { ...raw, sort: "name", order: "asc" }
+      : raw,
+  );
   if (!parsed)
     return (
       <div className="page surface empty-state">

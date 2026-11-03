@@ -38,7 +38,7 @@ export function ScenarioCatalog({
     router.replace(cameraHref(href({ selected: id }), window.location.search), {
       scroll: false,
     });
-  const sort = (key: ScenarioQuery["sort"], label: string) => (
+  const sort = (key: Exclude<ScenarioQuery["sort"], "id">, label: string) => (
     <Link
       replace
       scroll={false}
@@ -107,13 +107,7 @@ export function ScenarioCatalog({
           <table className="scenario-table" aria-label="Сценарии применения">
             <thead>
               <tr>
-                <th aria-sort={ariaSort(query.sort === "name" ? "name" : "id")}>
-                  <div className="catalog-scenario-sort">
-                    {sort("id", "ID")}
-                    <span aria-hidden="true">/</span>
-                    {sort("name", "Название")}
-                  </div>
-                </th>
+                <th aria-sort={ariaSort("name")}>{sort("name", "Название")}</th>
                 <th aria-sort={ariaSort("maturity")}>
                   {sort("maturity", "РЗ")}
                 </th>
@@ -192,7 +186,6 @@ export function ScenarioCatalog({
                     }}
                   >
                     <td>
-                      <span className="record-id">{item.externalId}</span>
                       <Link
                         className="record-title"
                         title={item.name}

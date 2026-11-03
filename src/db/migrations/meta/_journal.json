@@ -22,6 +22,13 @@
       "when": 1793195127372,
       "tag": "0002_windy_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793718000000,
+      "tag": "0003_clean_generated_scenario_names",
+      "breakpoints": true
     }
   ]
 }

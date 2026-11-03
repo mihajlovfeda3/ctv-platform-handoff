@@ -11,6 +11,116 @@ async function ready(page: Page) {
       Promise.all(el.getAnimations().map((a) => a.finished.catch(() => {}))),
     );
 }
+
+test("title order and row layout are stable with either sidebar state", async ({
+  page,
+  request,
+}) => {
+  const { items } = (await (
+    await request.get("/api/scenarios?sort=name&order=asc&pageSize=25")
+  ).json()) as {
+    items: { id: string; name: string }[];
+  };
+  await page.goto("/scenarios/catalog?sort=id&order=desc");
+  await ready(page);
+  const rows = page.locator(".catalog tbody tr");
+  const firstHeading = page.locator(".catalog th").first();
+  await expect(firstHeading).toHaveAttribute("aria-sort", "ascending");
+  await expect(page.locator(".catalog .record-title")).toHaveText(
+    items.map((item) => item.name),
+  );
+  expect(
+    await rows.evaluateAll((elements) =>
+      elements.map((row) => row.getAttribute("data-scenario-id")),
+    ),
+  ).toEqual(items.map((item) => item.id));
+  await expect(page.locator(".catalog tbody")).not.toContainText(
+    /SYN-\d{4}| · \d+\s*$/,
+  );
+
+  for (const collapsed of [false, true]) {
+    if (collapsed) {
+      await page
+        .getByRole("button", { name: "Свернуть панель", exact: true })
+        .click();
+      await page.mouse.move(600, 110);
+      await expect(
+        page.getByRole("button", { name: "Развернуть панель", exact: true }),
+      ).toBeVisible();
+    }
+    const layout = await page.locator(".catalog").evaluate((catalog) => {
+      const table = catalog.querySelector(".table-scroll")!;
+      return {
+        documentOverflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+        tableOverflow: table.scrollWidth - table.clientWidth,
+        clipped: [...table.querySelectorAll(".record-title")].some(
+          (title) => title.scrollHeight > title.clientHeight + 1,
+        ),
+        heights: [...table.querySelectorAll("tbody tr")].map(
+          (row) => row.getBoundingClientRect().height,
+        ),
+      };
+    });
+    expect(layout.documentOverflow).toBeLessThanOrEqual(1);
+    if (page.viewportSize()!.width >= 1366) {
+      expect(layout.tableOverflow).toBeLessThanOrEqual(1);
+      expect(layout.clipped).toBe(false);
+    }
+    expect(layout.heights.every((height) => height === 68)).toBe(true);
+  }
+  const width = page.viewportSize()!.width;
+  if (
+    process.env.SAVE_CATALOG_CLEANUP_SCREENSHOTS &&
+    [1366, 1920].includes(width)
+  ) {
+    await page.screenshot({
+      path: `output/catalog-cleanup/catalog-${width}.png`,
+      animations: "disabled",
+    });
+  }
+
+  await page.goto("/scenarios/catalog?q=SYN-0004");
+  await ready(page);
+  await expect(rows).toHaveCount(1);
+  const title = await rows.locator(".record-title").innerText();
+  const selected = await rows.getAttribute("data-scenario-id");
+  await rows.locator(".record-title").click();
+  const inspector = page.getByRole("region", {
+    name: "Быстрый просмотр сценария",
+  });
+  await expect(inspector.getByRole("heading", { level: 2 })).toHaveText(title);
+  await expect(inspector.getByText("SYN-0004", { exact: true })).toBeVisible();
+  await inspector
+    .getByRole("link", { name: "Открыть полную карточку →" })
+    .click();
+  await expect(page.locator("h1")).toHaveText(title);
+  await expect(page).toHaveURL(new RegExp(`/scenarios/${selected}\\?`));
+  await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
+  const tabs = page.getByRole("navigation", {
+    name: "Представления сценариев",
+  });
+  for (const [tab, selector] of [
+    ["Технологический радар", ".radar-point"],
+    ["Матрица зрелости", ".matrix-point"],
+  ]) {
+    await tabs.getByRole("link", { name: tab, exact: true }).press("Enter");
+    await expect(
+      page.locator(`${selector}[data-scenario="${selected}"]`),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(inspector.getByRole("heading", { level: 2 })).toHaveText(
+      title,
+    );
+    await expect(page).toHaveURL(/q=SYN-0004/);
+  }
+  await page.goto(`/scenarios/catalog?q=${encodeURIComponent(title)}`);
+  await ready(page);
+  expect(await rows.count()).toBeGreaterThan(0);
+  expect(await rows.locator(".record-title").allTextContents()).toContain(
+    title,
+  );
+});
 test("catalog defaults, sortable headings, paging and consistent scores", async ({
   page,
 }) => {
@@ -35,7 +145,7 @@ test("catalog defaults, sortable headings, paging and consistent scores", async 
   expect(scores[2]).toMatch(/^(—|[1-7]\/7)$/);
   expect(scores[3]).toMatch(/^(—|[1-3]\/3)$/);
   for (const [label, key] of [
-    ["ID", "id"],
+    ["Название", "name"],
     ["РЗ", "maturity"],
     ["ОГ", "readiness"],
     ["Влияние на бизнес-цели", "impact"],
@@ -132,8 +242,10 @@ test("row keyboard navigation, inspector updates, Esc and full card return retai
   page.on("request", (r) => {
     if (r.resourceType() === "document") documents.push(r.url());
   });
+  const nextTitle = await rows.nth(2).locator(".record-title").innerText();
   await rows.nth(2).getByRole("link").first().click();
-  await expect(panel.locator(".inspector-top")).toContainText("SYN-0003");
+  await expect(rows.nth(2)).toHaveAttribute("aria-selected", "true");
+  await expect(panel.getByRole("heading", { level: 2 })).toHaveText(nextTitle);
   expect(documents).toEqual([]);
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
@@ -146,11 +258,11 @@ test("row keyboard navigation, inspector updates, Esc and full card return retai
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(panel).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(top, 0);
-  expect(new URL(page.url()).searchParams.get("sort")).toBe("id");
+  expect(new URL(page.url()).searchParams.get("sort")).toBe("name");
   expect(id).toBeTruthy();
 });
 
-test("view titles, ID hierarchy and searchable keyboard-accessible filters", async ({
+test("view titles, clean catalogue rows and searchable keyboard-accessible filters", async ({
   page,
 }) => {
   await page.goto("/scenarios/catalog");
@@ -165,11 +277,13 @@ test("view titles, ID hierarchy and searchable keyboard-accessible filters", asy
     "Матрица зрелости",
   ]);
   await expect(page.locator(".catalog th")).toHaveCount(5);
-  await expect(page.locator(".catalog th").first()).toHaveText(/ID/);
+  await expect(page.locator(".catalog th").first()).toHaveText("Название");
+  await expect(page.locator(".catalog th").first()).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+  await expect(page.locator(".catalog tbody .record-id")).toHaveCount(0);
   const row = page.locator(".catalog tbody tr").first();
-  const idBox = await row.locator(".record-id").boundingBox();
-  const nameBox = await row.locator(".record-title").boundingBox();
-  expect(idBox!.y + idBox!.height).toBeLessThanOrEqual(nameBox!.y);
   await row.focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".catalog-inspector")).toBeVisible();
@@ -246,12 +360,11 @@ test("column headers and database ordering agree without a separate sort control
     ).toBeLessThan(315);
   for (const [key, label] of [
     ["name", "Название"],
-    ["id", "ID"],
     ["maturity", "РЗ"],
     ["readiness", "ОГ"],
     ["impact", "Влияние на бизнес-цели"],
   ]) {
-    for (const order of ["asc", "desc"]) {
+    for (const order of key === "name" ? ["desc", "asc"] : ["asc", "desc"]) {
       await page
         .getByRole("link", { name: `Сортировать: ${label}`, exact: true })
         .click();

@@ -274,11 +274,11 @@ test("selection follows the scenario across views without displacing radar label
       });
     }
   };
-  await page.goto("/scenarios/catalog?q=SYN-");
+  await page.goto(`/scenarios/catalog?q=${row.externalId}`);
   await expect(page.locator(".catalog")).toHaveAttribute("aria-busy", "false");
   await page
     .locator(`[data-scenario-id="${row.id}"]`)
-    .getByText(row.externalId, { exact: true })
+    .locator(".record-title")
     .click();
   await expect(panel.getByText(row.externalId, { exact: true })).toBeVisible();
   await tabs.getByText("Технологический радар", { exact: true }).press("Enter");
@@ -317,6 +317,7 @@ test("selection follows the scenario across views without displacing radar label
   await expect(radarPoint).toHaveAttribute("aria-pressed", "true");
   await panel.getByLabel("Закрыть инспектор").click();
   await expect(page.locator("[data-selection-halo]")).toHaveCount(0);
+  await page.goto("/scenarios/radar?q=SYN-");
   await ready(page);
 
   const otherPoint = page.locator(`.radar-point[data-scenario="${other.id}"]`);

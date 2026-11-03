@@ -3391,17 +3391,18 @@ tbody tr:hover {
 }
 .catalog-refined .scenario-table td:first-child {
   position: relative;
-  padding-right: 34px !important;
+  padding: 5px 34px 5px 16px !important;
 }
 .catalog-refined .record-title {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   color: #20384e;
 }
 .record-context {
@@ -3413,15 +3414,6 @@ tbody tr:hover {
   color: #5e7388;
   overflow: hidden;
   white-space: nowrap;
-}
-.catalog-refined .record-id {
-  display: block;
-  margin: 0 0 1px;
-  font-size: 11px;
-  line-height: 14px;
-  letter-spacing: 0.02em;
-  color: #5e7388;
-  flex-shrink: 0;
 }
 .record-context > span:last-of-type {
   overflow: hidden;
@@ -3707,14 +3699,6 @@ tbody tr:hover {
 .catalog-page .scenario-tabs a {
   padding-top: 7px;
   padding-bottom: 8px;
-}
-.catalog-scenario-sort {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.catalog-scenario-sort > span {
-  color: #a0afbf;
 }
 .scenario-workspace > .catalog,
 .scenario-workspace > .analytical-stage {
