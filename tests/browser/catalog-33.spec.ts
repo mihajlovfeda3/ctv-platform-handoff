@@ -243,7 +243,7 @@ test("row keyboard navigation, inspector updates, Esc and full card return retai
     if (r.resourceType() === "document") documents.push(r.url());
   });
   const nextTitle = await rows.nth(2).locator(".record-title").innerText();
-  await rows.nth(2).getByRole("link").first().click();
+  await rows.nth(2).press("Enter");
   await expect(rows.nth(2)).toHaveAttribute("aria-selected", "true");
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(nextTitle);
   expect(documents).toEqual([]);
