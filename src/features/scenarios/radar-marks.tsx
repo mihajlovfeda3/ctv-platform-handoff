@@ -13,6 +13,10 @@ import {
   type buildRadarHierarchy,
 } from "@/domain/radar-clusters";
 
+// Node and the browser can differ in the last bits of trigonometric results.
+// Serialize marker positions at the same subpixel precision on both sides.
+const svgCoordinate = (value: number) => Number(value.toFixed(6));
+
 export const RadarMarks = memo(function RadarMarks({
   data,
   hierarchy,
@@ -92,13 +96,15 @@ export const RadarMarks = memo(function RadarMarks({
         };
         if (!isGroup) {
           const r = radarPointScreenRadius(row.impact, baseScale, zoom) / scale;
+          const cx = svgCoordinate(node.x),
+            cy = svgCoordinate(node.y);
           return (
             <g key={`${node.key}:${row.id}`}>
               {selected === row.id && (
                 <circle
                   className="radar-selection-halo"
-                  cx={node.x}
-                  cy={node.y}
+                  cx={cx}
+                  cy={cy}
                   r={r + 4 / scale}
                   fill="#2274c51a"
                   stroke="#2274c54d"
@@ -114,8 +120,8 @@ export const RadarMarks = memo(function RadarMarks({
                 tabIndex={0}
                 aria-label={`${row.externalId}: ${row.name}`}
                 aria-pressed={selected === row.id}
-                cx={node.x}
-                cy={node.y}
+                cx={cx}
+                cy={cy}
                 r={r}
                 fill={statusColors[row.implementation]}
                 fillOpacity={0.86}
@@ -155,13 +161,13 @@ export const RadarMarks = memo(function RadarMarks({
             aria-pressed={active}
             aria-label={`Группа: ${direction}, РЗ ${node.level}, ${node.rows.length} сценариев`}
             {...events}
-            transform={`translate(${node.x + dx} ${node.y + dy}) scale(${1 / scale})`}
+            transform={`translate(${svgCoordinate(node.x + dx)} ${svgCoordinate(node.y + dy)}) scale(${1 / scale})`}
           >
             <desc>{`${direction} · РЗ ${node.level}\n${node.rows.length} сценариев: реализуется ${node.statuses.yes ?? 0}, не реализуется ${node.statuses.no ?? 0}, неизвестно ${node.statuses.unknown ?? 0}\nНажмите, чтобы открыть состав группы`}</desc>
             {dx || dy ? (
               <line
-                x1={-dx * scale}
-                y1={-dy * scale}
+                x1={svgCoordinate(-dx * scale)}
+                y1={svgCoordinate(-dy * scale)}
                 x2={0}
                 y2={0}
                 stroke="#87aac4"

@@ -44,6 +44,11 @@ test("default, original point coordinates, capped markers and cursor-anchored lo
     await request.get("/api/scenarios/analytics?q=SYN-")
   ).json();
   expect(data.total).toBe(Number(process.env.PERF_SIZE ?? 80));
+  const hydrationErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /hydrat/i.test(message.text()))
+      hydrationErrors.push(message.text());
+  });
   await page.goto("/scenarios/radar?q=SYN-");
   await ready(page);
   await expect(page.locator(".density-switch a")).toHaveText([
@@ -91,7 +96,15 @@ test("default, original point coordinates, capped markers and cursor-anchored lo
     a: { id: string | null; x: number },
     b: { id: string | null; x: number },
   ) => String(a.id).localeCompare(String(b.id)) || a.x - b.x;
-  expect(coordinates.sort(sort)).toEqual(expected.sort(sort));
+  coordinates.sort(sort);
+  expected.sort(sort);
+  expect(coordinates).toHaveLength(expected.length);
+  coordinates.forEach(({ id, x, y }, i) => {
+    expect(id).toBe(expected[i].id);
+    expect(Math.abs(x - expected[i].x)).toBeLessThanOrEqual(1e-6);
+    expect(Math.abs(y - expected[i].y)).toBeLessThanOrEqual(1e-6);
+  });
+  expect(hydrationErrors).toEqual([]);
   const calls: string[] = [],
     errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
