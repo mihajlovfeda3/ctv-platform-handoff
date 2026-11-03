@@ -163,9 +163,9 @@ export async function Workspace({
             </details>
           </>
         )}
-        {item && related && (
+        {(view !== "catalog" || (item && related)) && (
           <Inspector
-            key={item.scenario.id}
+            key={view === "catalog" ? item?.scenario.id : view}
             item={item}
             related={related}
             context={query.context}
@@ -177,7 +177,7 @@ export async function Workspace({
                   : "matrix"
             }
             closeHref={workspaceHref(view, query, { selected: undefined })}
-            fullHref={cardHref(item.scenario.id, view, query)}
+            fullHref={item ? cardHref(item.scenario.id, view, query) : ""}
           />
         )}
         {query.selected && !item && (

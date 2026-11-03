@@ -76,6 +76,9 @@ jobs:
       - name: Maturity workspace and shared-selection regression
         run: npx playwright test tests/browser/matrix-ui.spec.ts --project=1440 --project=1920 --project=768
 
+      - name: Floating and expanded scenario inspector regression
+        run: npx playwright test tests/browser/floating-inspector.spec.ts --project=1440 --project=1920
+
       - name: Analytical workspaces with 2500 PostgreSQL scenarios
         run: |
           npm run db:seed -- 2500

@@ -1,0 +1,132 @@
+:global(.scenarios-page .scenario-workspace)
+  > .expanded:global(.scenario-inspector) {
+  top: 66px;
+  width: 410px;
+  max-height: min(590px, 65dvh, var(--inspector-available-height, 65dvh));
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: none;
+  padding: 12px 20px 7px;
+}
+
+.body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 20px 12px;
+}
+
+.expanded .body h2 {
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  flex: none;
+  padding: 8px 20px 12px;
+  border-top: 1px solid #e9eff6;
+}
+
+.expanded .footer :global(.button) {
+  margin-top: 0;
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+}
+
+.iconButton,
+.close {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #506a84;
+  cursor: pointer;
+}
+
+.iconButton:hover,
+.close:hover {
+  background: #edf4fc;
+}
+
+.panel {
+  position: fixed;
+  z-index: 25;
+  width: min(304px, calc(100vw - 16px));
+  padding: 8px 10px 10px;
+  color: #183954;
+  background: #fff;
+  border: 1px solid #dbe5f2;
+  border-radius: 9px;
+  box-shadow: 0 6px 20px #1c3d651a;
+  animation: appear 160ms ease-out;
+}
+
+.handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.close {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.panel .cardLink {
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
