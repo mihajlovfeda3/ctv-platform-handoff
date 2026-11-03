@@ -39,6 +39,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         )
       )
         return;
+      // The native popover closes on Escape even before focus moves into it.
+      if (document.querySelector(".radar-info-popover:popover-open")) return;
       const url = new URL(window.location.href);
       if (url.searchParams.has("selected")) url.searchParams.delete("selected");
       else if (

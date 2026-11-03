@@ -231,9 +231,14 @@ test("point/cell tooltips, inspector, full card return, unknown selection and Es
   ).toBeVisible();
   await cellsMode(page);
   expect(new URL(page.url()).searchParams.get("selected")).toBe(id);
-  await page.getByRole("button", { name: "О матрице и выборке" }).click();
-  await expect(page.locator(".matrix-info-popover")).toBeVisible();
+  const infoButton = page.getByRole("button", { name: "О матрице и выборке" });
+  const popover = page.locator(".matrix-info-popover");
+  await infoButton.click();
+  await expect(popover).toBeVisible();
+  // Escape may arrive before the native popover has moved focus from the trigger.
+  await infoButton.focus();
   await page.keyboard.press("Escape");
+  await expect(popover).toBeHidden();
   expect(new URL(page.url()).searchParams.get("selected")).toBe(id);
   await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
   await expect(page).toHaveURL(/from=maturity/);
