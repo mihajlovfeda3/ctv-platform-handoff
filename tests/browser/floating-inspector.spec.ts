@@ -41,9 +41,7 @@ for (const view of ["radar", "points", "cells"] as const) {
     await expect(collapse).toBeVisible();
     const standard = (await panel.boundingBox())!;
     const initialUrl = page.url();
-    const firstName = await panel
-      .getByRole("heading", { level: 2 })
-      .textContent();
+    const firstSelection = new URL(initialUrl).searchParams.get("selected");
     const camera = page.getByTestId("camera");
     const cameraTransform =
       view === "radar" ? await camera.getAttribute("transform") : null;
@@ -89,7 +87,9 @@ for (const view of ["radar", "points", "cells"] as const) {
     const parked = (await panel.boundingBox())!;
     await select(1);
     await expect(expand).toBeVisible();
-    await expect(title).not.toHaveText(firstName!);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("selected"))
+      .not.toBe(firstSelection);
     expect((await panel.boundingBox())!.x).toBeCloseTo(parked.x, 0);
     const selected = new URL(page.url()).searchParams.get("selected")!;
     const full = panel.getByRole("link", { name: "Открыть полную карточку →" });
