@@ -66,7 +66,7 @@ export default async function ScenarioDetail({
           </span>
         </div>
         <h1>{s.name}</h1>
-        <p>{s.description}</p>
+        <p>{s.description.trim() || "Не указано"}</p>
         <span className={`status ${s.implementation}`}>
           <i />
           {implementationLabels[s.implementation]}
@@ -76,7 +76,6 @@ export default async function ScenarioDetail({
         <div>
           <span className="muted">Бизнес-процесс</span>
           <h3>{item.business ?? "Не указан"}</h3>
-          <p>{item.functionalGroup ?? "Группа не указана"}</p>
         </div>
         <div>
           <span className="muted">Технологическая классификация</span>
@@ -94,7 +93,13 @@ export default async function ScenarioDetail({
         <dl>
           {[
             ["Блок «Газпром нефти»", item.classification?.block],
-            ["Бизнес-направление", item.classification?.businessDirection],
+            [
+              "Функциональная группа",
+              item.functionalGroup ??
+                (item.functionalGroupConflict || item.functionalGroupUnmapped
+                  ? "Требует сопоставления"
+                  : null),
+            ],
             [
               "Происхождение связей классификации",
               item.classification?.isSynthetic
@@ -102,6 +107,9 @@ export default async function ScenarioDetail({
                 : "Не указано",
             ],
             ["Бизнес-вызов", s.businessChallenge],
+            ...(s.businessChallengeDescription?.trim()
+              ? [["Описание бизнес-вызова", s.businessChallengeDescription]]
+              : []),
             ["Обоснование", s.rationale],
             ["Предложение проекта", s.projectProposal],
           ].map(([k, v]) => (
@@ -114,9 +122,13 @@ export default async function ScenarioDetail({
       </section>
       <section className="surface detail-section linked-objects">
         <h2>Задачи, эффекты и связанные объекты</h2>
+        <div>
+          <h3>Бизнес-эффект</h3>
+          <p>{s.businessEffect?.trim() || "Не указано"}</p>
+        </div>
         {[
           ["Классы задач", related.tasks],
-          ["Типы бизнес-эффектов", related.effects],
+          ["Типы эффектов", related.effects],
           ["Кейсы бенчмаркинга", related.cases],
           ["Решения поставщиков", related.solutions],
           ["Внутренние проекты", related.projects],

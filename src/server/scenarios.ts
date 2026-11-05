@@ -55,7 +55,10 @@ export async function listScenarios(
           business: s.businessNodes.name,
           blockId: s.scenarioClassification.blockId,
           businessDirectionId: s.scenarioClassification.businessDirectionId,
-          functionalGroup: s.functionalGroups.name,
+          functionalGroup: s.scenarioFunctionalGroups.name,
+          functionalGroupId: s.scenarioFunctionalGroups.groupId,
+          functionalGroupConflict: s.scenarioFunctionalGroups.conflict,
+          functionalGroupUnmapped: s.scenarioFunctionalGroups.unmapped,
         })
         .from(s.scenarios)
         .leftJoin(
@@ -67,8 +70,8 @@ export async function listScenarios(
           eq(s.scenarios.businessNodeId, s.businessNodes.id),
         )
         .leftJoin(
-          s.functionalGroups,
-          eq(s.scenarios.functionalGroupId, s.functionalGroups.id),
+          s.scenarioFunctionalGroups,
+          eq(s.scenarios.id, s.scenarioFunctionalGroups.scenarioId),
         )
         .where(where)
         .orderBy(ordering, asc(s.scenarios.id))
@@ -109,7 +112,9 @@ export async function getScenario(id: string, db: Database = getDatabase()) {
     .select({
       scenario: s.scenarios,
       business: s.businessNodes.name,
-      functionalGroup: s.functionalGroups.name,
+      functionalGroup: s.scenarioFunctionalGroups.name,
+      functionalGroupConflict: s.scenarioFunctionalGroups.conflict,
+      functionalGroupUnmapped: s.scenarioFunctionalGroups.unmapped,
       source: s.sources.name,
     })
     .from(s.scenarios)
@@ -118,8 +123,8 @@ export async function getScenario(id: string, db: Database = getDatabase()) {
       eq(s.scenarios.businessNodeId, s.businessNodes.id),
     )
     .leftJoin(
-      s.functionalGroups,
-      eq(s.scenarios.functionalGroupId, s.functionalGroups.id),
+      s.scenarioFunctionalGroups,
+      eq(s.scenarios.id, s.scenarioFunctionalGroups.scenarioId),
     )
     .leftJoin(s.sources, eq(s.scenarios.sourceId, s.sources.id))
     .where(eq(s.scenarios.id, id));
@@ -240,7 +245,11 @@ export async function getReferences(db: Database = getDatabase()) {
     db.select().from(s.keyTechnologies).orderBy(s.keyTechnologies.name),
     db.select().from(s.technologyMethods).orderBy(s.technologyMethods.name),
     db.select().from(s.businessNodes).orderBy(s.businessNodes.name),
-    db.select().from(s.functionalGroups).orderBy(s.functionalGroups.name),
+    db
+      .select()
+      .from(s.functionalGroups)
+      .where(eq(s.functionalGroups.description, "ctv-functional-groups-v1"))
+      .orderBy(s.functionalGroups.name),
     db
       .select()
       .from(s.organizationalBlocks)
@@ -275,16 +284,15 @@ export function scenarioConditions(q: ReturnType<typeof scenarioQuery.parse>) {
     conditions.push(
       sql`${s.scenarios.businessNodeId} in (with recursive subtree as (select id from ${s.businessNodes} where id=${q.businessNodeId} union select b.id from ${s.businessNodes} b join subtree p on b.parent_id=p.id) select id from subtree)`,
     );
-  for (const [value, column] of [
-    [q.blockId, s.scenarioClassification.blockId],
-    [q.businessDirectionId, s.scenarioClassification.businessDirectionId],
-  ] as const)
-    if (value)
-      conditions.push(
-        sql`exists (select 1 from ${s.scenarioClassification} where ${s.scenarioClassification.scenarioId}=${s.scenarios.id} and ${column}=${value})`,
-      );
-  if (q.functionalGroupId)
-    conditions.push(eq(s.scenarios.functionalGroupId, q.functionalGroupId));
+  if (q.blockId)
+    conditions.push(
+      sql`exists (select 1 from ${s.scenarioClassification} where ${s.scenarioClassification.scenarioId}=${s.scenarios.id} and ${s.scenarioClassification.blockId}=${q.blockId})`,
+    );
+  for (const groupId of [q.functionalGroupId, q.businessDirectionId])
+    if (groupId)
+      conditions.push(sql`exists (select 1 from ${s.scenarioFunctionalGroups}
+      where ${s.scenarioFunctionalGroups.scenarioId}=${s.scenarios.id}
+      and ${s.scenarioFunctionalGroups.groupId}=${groupId})`);
   if (q.implementation)
     conditions.push(eq(s.scenarios.implementation, q.implementation));
   if (q.directionId)

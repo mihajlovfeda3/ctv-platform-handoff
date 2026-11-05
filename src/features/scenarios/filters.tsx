@@ -160,9 +160,13 @@ export function ScenarioFilters({
   if (query.q) chips.push({ label: `Поиск: ${query.q}`, keys: ["q"] });
   for (const [key, label, items] of [
     ["blockId", "Блок", references.blocks],
-    ["businessDirectionId", "Бизнес", references.businessDirections],
+    [
+      "businessDirectionId",
+      "Функциональная группа",
+      references.businessDirections,
+    ],
     ["directionId", "Технология", references.directions],
-    ["functionalGroupId", "Группа", references.groups],
+    ["functionalGroupId", "Функциональная группа", references.groups],
     ["businessNodeId", "Процесс", references.business],
   ] as const)
     if (query[key])
@@ -297,10 +301,10 @@ export function ScenarioFilters({
               "Все блоки",
             )}
             {field(
-              "businessDirectionId",
-              "БИЗНЕС-НАПРАВЛЕНИЕ",
-              references.businessDirections,
-              "Все направления",
+              "functionalGroupId",
+              "ФУНКЦИОНАЛЬНАЯ ГРУППА",
+              references.groups,
+              "Все группы",
             )}
             {field(
               "directionId",
@@ -393,10 +397,10 @@ export function ScenarioFilters({
                 "Все блоки",
               )}
               {field(
-                "businessDirectionId",
-                "БИЗНЕС-НАПРАВЛЕНИЕ",
-                references.businessDirections,
-                "Все направления",
+                "functionalGroupId",
+                "ФУНКЦИОНАЛЬНАЯ ГРУППА",
+                references.groups,
+                "Все группы",
               )}
               {range("maturity", "Рыночная зрелость (РЗ)", 5)}
               {range("readiness", "Организационная готовность (ОГ)", 7)}
@@ -410,11 +414,6 @@ export function ScenarioFilters({
                 <option>Справочник не согласован</option>
               </select>
             </label>
-          )}
-          {field(
-            "functionalGroupId",
-            "Функциональная группа",
-            references.groups,
           )}
           {!compact && field("impact", "Влияние: точное значение", options(3))}
           {range("impact", "Влияние на бизнес-цели", 3)}

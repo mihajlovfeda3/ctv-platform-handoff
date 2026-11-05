@@ -20,11 +20,9 @@ const subscribe = () => () => {};
 export function ScenarioCatalog({
   result,
   query,
-  businessDirections,
 }: {
   result: ScenarioList;
   query: ScenarioQuery;
-  businessDirections: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const ready = useSyncExternalStore(
@@ -129,11 +127,10 @@ export function ScenarioCatalog({
                   return v == null ? "—" : `${v}/${max}`;
                 };
                 const businessContext =
-                  businessDirections.find(
-                    (b) => b.id === item.businessDirectionId,
-                  )?.name ??
-                  item.business ??
                   item.functionalGroup ??
+                  (item.functionalGroupConflict || item.functionalGroupUnmapped
+                    ? "Функциональная группа требует сопоставления"
+                    : item.business) ??
                   "Бизнес-контекст не указан";
                 return (
                   <tr

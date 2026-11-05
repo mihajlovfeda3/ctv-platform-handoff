@@ -322,10 +322,10 @@ test("view titles, clean catalogue rows and searchable keyboard-accessible filte
   await expect(technology).toBeFocused();
   await page.locator(".advanced-filters summary").click();
   await page
-    .getByRole("button", { name: "БИЗНЕС-НАПРАВЛЕНИЕ", exact: true })
+    .getByRole("button", { name: "ФУНКЦИОНАЛЬНАЯ ГРУППА", exact: true })
     .click();
   await page
-    .getByRole("combobox", { name: "Поиск: БИЗНЕС-НАПРАВЛЕНИЕ" })
+    .getByRole("combobox", { name: "Поиск: ФУНКЦИОНАЛЬНАЯ ГРУППА" })
     .fill("энергетика");
   await expect(page.getByRole("option")).toHaveCount(2);
   await page.locator("h1").click();
@@ -458,14 +458,14 @@ test("single impact range, clean advanced filters and dropdown layout", async ({
   await ready(page);
   await expect(page.locator(".catalog-count strong")).toHaveText("80");
   await page
-    .getByRole("button", { name: "БИЗНЕС-НАПРАВЛЕНИЕ", exact: true })
+    .getByRole("button", { name: "ФУНКЦИОНАЛЬНАЯ ГРУППА", exact: true })
     .click();
   const box = (await page.locator(".ctv-select-popover").boundingBox())!;
   expect(box.height).toBeLessThanOrEqual(380);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
   await page
-    .getByRole("combobox", { name: "Поиск: БИЗНЕС-НАПРАВЛЕНИЕ" })
+    .getByRole("combobox", { name: "Поиск: ФУНКЦИОНАЛЬНАЯ ГРУППА" })
     .fill("Система управления");
   await expect(page.getByRole("option")).toHaveCount(1);
   expect(

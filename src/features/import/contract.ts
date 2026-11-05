@@ -7,6 +7,8 @@ export const importFields = [
   "functionalGroupId",
   "businessNodeId",
   "businessChallenge",
+  "businessChallengeDescription",
+  "businessEffect",
   "technologyMethodIds",
   "market_maturity",
   "organizational_readiness",

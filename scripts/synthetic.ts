@@ -1,6 +1,17 @@
 import { stableId } from "../src/lib/identity";
+import { scenarioProfile, scenarioProfiles } from "./scenario-profiles";
+import {
+  demoId,
+  directionAliases,
+  functionalGroupId,
+  originalDirections,
+  referenceMethodId,
+  referenceTechnologyId,
+  technologyReference,
+} from "../src/domain/ctv-reference";
+import { functionalGroupNames } from "../src/domain/terminology";
 export const SYNTHETIC_SEED = 20261027;
-export function generateDataset(size = 80, seed = SYNTHETIC_SEED) {
+export function generateLegacyDataset(size = 80, seed = SYNTHETIC_SEED) {
   if (!Number.isInteger(size) || size < 1 || size > 10000)
     throw new Error("Размер набора: 1–10 000");
   let state = seed >>> 0;
@@ -256,5 +267,109 @@ export function generateDataset(size = 80, seed = SYNTHETIC_SEED) {
         ...link(row.id),
         projectId: projects[i % projects.length].id,
       })),
+  };
+}
+
+export function generateDataset(size = 80, seed = SYNTHETIC_SEED) {
+  const legacy = generateLegacyDataset(size, seed);
+  const sourceId = legacy.sources[0].id;
+  const meta = (
+    id: string,
+    name: string,
+    description: string | null = null,
+  ) => ({
+    id,
+    name,
+    description,
+    sourceId,
+    isSynthetic: true,
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    updatedAt: new Date("2026-01-01T00:00:00Z"),
+  });
+  const link = (scenarioId: string) => ({
+    scenarioId,
+    sourceId,
+    isSynthetic: true,
+  });
+  const technologies = [
+    ...new Map(
+      technologyReference.map(([direction, technology]) => {
+        const id = referenceTechnologyId(direction, technology);
+        return [
+          id,
+          {
+            ...meta(id, technology),
+            directionId: demoId(
+              `direction:${originalDirections.indexOf(directionAliases[direction] ?? direction)}`,
+            ),
+          },
+        ];
+      }),
+    ).values(),
+  ];
+  return {
+    ...legacy,
+    groups: [
+      ...legacy.groups,
+      ...functionalGroupNames.map((name) =>
+        meta(functionalGroupId(name), name, "ctv-functional-groups-v1"),
+      ),
+    ],
+    business: [
+      ...legacy.business,
+      ...scenarioProfiles.map((profile, i) => ({
+        ...meta(demoId(`scenario-process:${i}`), profile.process),
+        kind: "process" as const,
+        parentId: null,
+      })),
+    ],
+    tasks: [
+      ...legacy.tasks,
+      ...scenarioProfiles.map((profile, i) => ({
+        ...meta(demoId(`scenario-task:${i}`), profile.task),
+        businessNodeId: demoId(`scenario-process:${i}`),
+      })),
+    ],
+    directions: [
+      ...legacy.directions,
+      ...originalDirections.map((name, i) =>
+        meta(demoId(`direction:${i}`), name, "ctv-demo-classification-v2"),
+      ),
+    ],
+    technologies: [...legacy.technologies, ...technologies],
+    methods: [
+      ...legacy.methods,
+      ...technologyReference.map(([direction, technology, method]) => ({
+        ...meta(referenceMethodId(direction, technology, method), method),
+        technologyId: referenceTechnologyId(direction, technology),
+      })),
+    ],
+    scenarios: legacy.scenarios.map((row, index) => {
+      const profile = scenarioProfile(index);
+      return {
+        ...row,
+        name: profile.name,
+        description: profile.description,
+        functionalGroupId: profile.groupId,
+        businessNodeId: profile.processId,
+        businessChallenge: profile.challenge,
+        businessChallengeDescription: profile.problem,
+        businessEffect: profile.effect,
+        rationale: null,
+        projectProposal: null,
+      };
+    }),
+    scenarioTechnologies: legacy.scenarios.map((row, index) => ({
+      ...link(row.id),
+      methodId: scenarioProfile(index).methodId,
+    })),
+    scenarioTasks: legacy.scenarios.map((row, index) => ({
+      ...link(row.id),
+      taskId: scenarioProfile(index).taskId,
+    })),
+    scenarioEffects: legacy.scenarios.map((row, index) => ({
+      ...link(row.id),
+      effectId: legacy.effects[scenarioProfile(index).effectIndex].id,
+    })),
   };
 }

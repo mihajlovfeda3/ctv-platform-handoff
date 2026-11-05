@@ -41,6 +41,18 @@ export function filterErrors(draft: FilterDraft) {
 }
 /** Only contradictory bounds are recoverable in the workspace. HTTP API stays strict. */
 export function workspaceQuery(raw: Record<string, unknown>) {
+  if (raw.businessDirectionId) {
+    if (
+      raw.functionalGroupId &&
+      raw.functionalGroupId !== raw.businessDirectionId
+    )
+      return null;
+    raw = {
+      ...raw,
+      functionalGroupId: raw.functionalGroupId ?? raw.businessDirectionId,
+    };
+    delete raw.businessDirectionId;
+  }
   raw = { ...raw, pageSize: raw.pageSize ?? 25, mode: raw.mode ?? "points" };
   const presentation: { matrixMode?: "points" | "cells" } =
     raw.matrixMode === "points" || raw.matrixMode === "cells"

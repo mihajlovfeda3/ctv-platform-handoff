@@ -77,11 +77,7 @@ export async function Workspace({
       />
       <div className="scenario-workspace" key={view}>
         {view === "catalog" ? (
-          <ScenarioCatalog
-            result={result}
-            query={query}
-            businessDirections={references.businessDirections}
-          />
+          <ScenarioCatalog result={result} query={query} />
         ) : (
           <>
             <section className="surface analytical-stage">

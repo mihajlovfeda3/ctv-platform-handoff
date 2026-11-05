@@ -1,10 +1,23 @@
 import { scenarioQuery } from "../src/domain/scenario";
+import { functionalGroupId } from "../src/domain/ctv-reference";
 import { it, expect } from "vitest";
 import {
   editFilter,
   filterErrors,
   workspaceQuery,
 } from "../src/features/scenarios/filter-state";
+it("maps legacy business-direction links to the single FG filter", () => {
+  const group = functionalGroupId("Переработка");
+  const query = workspaceQuery({ businessDirectionId: group })!.query;
+  expect(query.functionalGroupId).toBe(group);
+  expect(query.businessDirectionId).toBeUndefined();
+  expect(
+    workspaceQuery({
+      businessDirectionId: group,
+      functionalGroupId: functionalGroupId("HR"),
+    }),
+  ).toBeNull();
+});
 it.each(["maturity", "readiness", "impact"])(
   "normalizes exact/range symmetrically for %s",
   (p) => {

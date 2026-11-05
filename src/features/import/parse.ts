@@ -185,6 +185,9 @@ export function prepareImport(
       ),
       businessNodeId: resolve("businessNodeId", read("businessNodeId")),
       businessChallenge: read("businessChallenge") || null,
+      businessChallengeDescription:
+        read("businessChallengeDescription") || null,
+      businessEffect: read("businessEffect") || null,
       implementation,
       isSynthetic: options.synthetic,
       ooda: read("ooda") || null,

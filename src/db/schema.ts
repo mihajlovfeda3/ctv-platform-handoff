@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgView,
   pgEnum,
   uuid,
   text,
@@ -118,6 +119,8 @@ export const scenarios = pgTable(
     ),
     businessNodeId: uuid("business_node_id").references(() => businessNodes.id),
     businessChallenge: text("business_challenge"),
+    businessChallengeDescription: text("business_challenge_description"),
+    businessEffect: text("business_effect"),
     implementation: implementationStatus("implementation")
       .notNull()
       .default("unknown"),
@@ -302,3 +305,11 @@ export const scenarioClassification = pgTable("scenario_classification", {
   ),
   ...linkMeta(),
 });
+
+export const scenarioFunctionalGroups = pgView("scenario_functional_groups", {
+  scenarioId: uuid("scenario_id"),
+  groupId: uuid("group_id"),
+  name: text("name"),
+  conflict: boolean("conflict"),
+  unmapped: boolean("unmapped"),
+}).existing();

@@ -380,7 +380,9 @@ test("selection follows the scenario across views without displacing radar label
   await expect(page.locator("[data-selection-halo]")).toHaveCount(0);
 
   await page.goto(
-    `/scenarios/radar?q=SYN-&zoom=8&panX=-4000&selected=${row.id}`,
+    // Stay inside the existing camera pan limit: this checks selection reveal,
+    // independently of the separate boundary-clamping behaviour.
+    `/scenarios/radar?q=SYN-&zoom=8&panX=-1000&selected=${row.id}`,
   );
   await expect(radarPoint).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("camera")).toHaveAttribute("data-zoom", "8");

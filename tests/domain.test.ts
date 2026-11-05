@@ -4,7 +4,10 @@ import {
   scenarioInput,
   scenarioQuery,
 } from "../src/domain/scenario";
-import { generateDataset } from "../scripts/synthetic";
+import { generateDataset, generateLegacyDataset } from "../scripts/synthetic";
+import { functionalGroupId } from "../src/domain/ctv-reference";
+import { functionalGroupNames } from "../src/domain/terminology";
+import { scenarioProfile } from "../scripts/scenario-profiles";
 
 describe("Предметные правила", () => {
   it.each([
@@ -66,7 +69,23 @@ describe("Синтетический генератор", () => {
       ),
     ).toEqual(a.assessments);
     expect(new Set(large.scenarios.map((s) => s.id)).size).toBe(2500);
-    expect(new Set(a.scenarios.map((s) => s.functionalGroupId)).size).toBe(4);
+    expect(new Set(a.scenarios.map((s) => s.name)).size).toBe(80);
+    expect(a.scenarios.map((row) => row.id)).toEqual(
+      generateLegacyDataset(80).scenarios.map((row) => row.id),
+    );
+    expect(a.assessments).toEqual(generateLegacyDataset(80).assessments);
+    for (const [i, row] of a.scenarios.entries()) {
+      expect(functionalGroupNames.map(functionalGroupId)).toContain(
+        row.functionalGroupId,
+      );
+      expect(row.businessEffect).not.toBeNull();
+      expect(row.description).not.toMatch(/проверки каталога|Учебный сценарий/);
+      expect(row.name).not.toMatch(/ · \d+$/);
+      expect(a.scenarioTechnologies[i].methodId).toBe(
+        scenarioProfile(i).methodId,
+      );
+      expect(a.scenarioTasks[i].taskId).toBe(scenarioProfile(i).taskId);
+    }
   });
   it("маркирует сущности, оценки и связи как синтетические", () => {
     for (const values of Object.values(generateDataset()))

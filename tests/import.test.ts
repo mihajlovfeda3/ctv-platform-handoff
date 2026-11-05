@@ -25,6 +25,31 @@ const row = {
   og: null,
 };
 describe("Контракт импорта", () => {
+  it("принимает отдельные формулировки эффекта и описания вызова", () => {
+    const result = prepareImport(
+      JSON.stringify([
+        {
+          ...row,
+          effect: "Сократить время сверки.",
+          challenge: "Условия документов различаются.",
+        },
+      ]),
+      "json",
+      {
+        columns: {
+          ...mapping.columns,
+          businessEffect: "effect",
+          businessChallengeDescription: "challenge",
+        },
+      },
+      options,
+    );
+    expect(result.valid).toBe(true);
+    expect(result.rows[0].data).toMatchObject({
+      businessEffect: "Сократить время сверки.",
+      businessChallengeDescription: "Условия документов различаются.",
+    });
+  });
   it.each([
     45292,
     "01.01.2024",

@@ -17,6 +17,8 @@ export const scenarioInput = z.object({
   functionalGroupId: z.uuid().nullable().optional(),
   businessNodeId: z.uuid().nullable().optional(),
   businessChallenge: z.string().max(5000).nullable().optional(),
+  businessChallengeDescription: z.string().max(20000).nullable().optional(),
+  businessEffect: z.string().max(20000).nullable().optional(),
   sourceId: z.uuid().nullable().optional(),
   implementation: z.enum(["yes", "no", "unknown"]).default("unknown"),
   isSynthetic: z.boolean(),

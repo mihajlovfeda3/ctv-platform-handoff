@@ -85,6 +85,12 @@ export function Inspector({
     };
   }, [focusKey, floatingPosition]);
   if (!item || !related) return null;
+  const group =
+    item.functionalGroup ??
+    (item.functionalGroupConflict || item.functionalGroupUnmapped
+      ? "Требует сопоставления"
+      : "Не указана");
+  const description = item.scenario.description.trim() || "Не указано";
   if (variant === "catalog") {
     const values = item.assessments
       .map((a) => a.assessment)
@@ -113,7 +119,7 @@ export function Inspector({
             <i />
             {implementationLabels[item.scenario.implementation]}
           </span>
-          <p className="inspector-description">{item.scenario.description}</p>
+          <p className="inspector-description">{description}</p>
           <div className="catalog-metrics">
             {[
               ["market_maturity", "РЗ", 5],
@@ -134,14 +140,18 @@ export function Inspector({
             <dl>
               <dt>Блок «Газпром нефти»</dt>
               <dd>{item.classification?.block ?? "Не указан"}</dd>
-              <dt>Бизнес-направление</dt>
-              <dd>{item.classification?.businessDirection ?? "Не указано"}</dd>
-              <dt>Процесс</dt>
+              <dt>Функциональная группа</dt>
+              <dd>{group}</dd>
+              <dt>Бизнес-процесс</dt>
               <dd>{item.business ?? "Не указан"}</dd>
-              {item.functionalGroup && (
+              <dt>Бизнес-эффект</dt>
+              <dd>{item.scenario.businessEffect?.trim() || "Не указано"}</dd>
+              {related.effects.length > 0 && (
                 <>
-                  <dt>Функциональная группа</dt>
-                  <dd>{item.functionalGroup}</dd>
+                  <dt>Типы эффектов</dt>
+                  <dd>
+                    {related.effects.map((effect) => effect.name).join(", ")}
+                  </dd>
                 </>
               )}
             </dl>
@@ -163,9 +173,9 @@ export function Inspector({
           <section>
             <h3>Связанные объекты</h3>
             <p className="related-summary">
-              {related.tasks.length} задач · {related.effects.length} эффектов ·{" "}
-              {related.cases.length} кейсов · {related.solutions.length} решений
-              · {related.projects.length} проектов
+              {related.tasks.length} задач · {related.cases.length} кейсов ·{" "}
+              {related.solutions.length} решений · {related.projects.length}{" "}
+              проектов
             </p>
           </section>
         </div>
@@ -240,7 +250,7 @@ export function Inspector({
           <i />
           {implementationLabels[item.scenario.implementation]}
         </span>
-        <p>{item.scenario.description}</p>
+        <p>{description}</p>
         <Metrics
           assessments={item.assessments
             .map((a) => a.assessment)
@@ -248,8 +258,8 @@ export function Inspector({
         />
         <h3>Блок «Газпром нефти»</h3>
         <p>{item.classification?.block ?? "Не указан"}</p>
-        <h3>Бизнес-направление</h3>
-        <p>{item.classification?.businessDirection ?? "Не указано"}</p>
+        <h3>Функциональная группа</h3>
+        <p>{group}</p>
         {item.classification?.isSynthetic && (
           <p>Связи классификации синтетические</p>
         )}
@@ -261,11 +271,19 @@ export function Inspector({
             {t.direction} → {t.technology} → {t.name}
           </p>
         ))}
+        <h3>Бизнес-эффект</h3>
+        <p>{item.scenario.businessEffect?.trim() || "Не указано"}</p>
+        {related.effects.length > 0 && (
+          <p>
+            Типы эффектов:{" "}
+            {related.effects.map((effect) => effect.name).join(", ")}
+          </p>
+        )}
         <h3>Связанные объекты</h3>
         <p>
-          {related.tasks.length} задач · {related.effects.length} эффектов ·{" "}
-          {related.cases.length} кейсов · {related.solutions.length} решений ·{" "}
-          {related.projects.length} проектов
+          {related.tasks.length} задач · {related.cases.length} кейсов ·{" "}
+          {related.solutions.length} решений · {related.projects.length}{" "}
+          проектов
         </p>
       </div>
       <footer className={floatingStyles.footer}>

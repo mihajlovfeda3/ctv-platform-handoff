@@ -45,3 +45,5 @@ export const businessDirectionNames = [
   "Закупки",
   "ИТО",
 ];
+// The supplied FG workbook confirms this dictionary. Keep the legacy export.
+export const functionalGroupNames = businessDirectionNames;

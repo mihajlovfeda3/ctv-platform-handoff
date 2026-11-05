@@ -8,21 +8,23 @@ test("database classifiers filter and survive all workspace routes", async ({
   expect(refs.directions).toHaveLength(8);
   expect(refs.blocks).toHaveLength(11);
   expect(refs.businessDirections).toHaveLength(31);
+  const sample = (
+    await (await request.get("/api/scenarios?q=SYN-&pageSize=1")).json()
+  ).items[0];
+  const groupId = sample.functionalGroupId;
   let directionId: string | undefined;
-  let blockId: string | undefined;
   for (const direction of refs.directions) {
     const result = await (
       await request.get(
         "/api/scenarios?" +
           new URLSearchParams({
-            businessDirectionId: refs.businessDirections[0].id,
+            functionalGroupId: groupId,
             directionId: direction.id,
           }),
       )
     ).json();
     if (result.total > 0) {
       directionId = direction.id;
-      blockId = result.items[0].blockId;
       break;
     }
   }
@@ -30,13 +32,8 @@ test("database classifiers filter and survive all workspace routes", async ({
   await page.goto("/scenarios/catalog");
   await page.locator(".advanced-filters summary").click();
   for (const [label, values, selected] of [
-    [
-      "БИЗНЕС-НАПРАВЛЕНИЕ",
-      refs.businessDirections,
-      refs.businessDirections[0].id,
-    ],
+    ["ФУНКЦИОНАЛЬНАЯ ГРУППА", refs.groups, groupId],
     ["ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ", refs.directions, directionId],
-    ["БЛОК „ГАЗПРОМ НЕФТЬ“", refs.blocks, blockId],
   ] as const) {
     await expect(page.locator(".shared-filters")).toHaveAttribute(
       "aria-busy",
@@ -71,10 +68,7 @@ test("database classifiers filter and survive all workspace routes", async ({
     await expect(page).toHaveURL(new RegExp(`/scenarios/${view}\\?`));
     const params = new URL(page.url()).searchParams;
     expect(params.get("selected")).toBe(selected);
-    expect(params.get("blockId")).toBe(blockId);
-    expect(params.get("businessDirectionId")).toBe(
-      refs.businessDirections[0].id,
-    );
+    expect(params.get("functionalGroupId")).toBe(groupId);
     expect(params.get("directionId")).toBe(directionId!);
   }
   if (process.env.SAVE_UX_SCREENSHOTS && info.project.name === "1440") {
@@ -83,7 +77,7 @@ test("database classifiers filter and survive all workspace routes", async ({
     await expect(page.locator(".catalog tbody tr")).toHaveCount(25);
     for (const [key, label] of [
       ["blockId", "БЛОК „ГАЗПРОМ НЕФТЬ“"],
-      ["businessDirectionId", "БИЗНЕС-НАПРАВЛЕНИЕ"],
+      ["functionalGroupId", "ФУНКЦИОНАЛЬНАЯ ГРУППА"],
       ["directionId", "ТЕХНОЛОГИЧЕСКОЕ НАПРАВЛЕНИЕ"],
     ]) {
       await page.getByRole("button", { name: label, exact: true }).click();

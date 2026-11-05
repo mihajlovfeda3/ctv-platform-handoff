@@ -4,7 +4,7 @@ import * as s from "@/db/schema";
 import { generateDataset } from "../../scripts/synthetic";
 export async function seedDatabase(db: Database, size = 80, seed?: number) {
   const d = generateDataset(size, seed);
-  await db.transaction(async (tx) => {
+  const classification = await db.transaction(async (tx) => {
     await tx.insert(s.sources).values(d.sources).onConflictDoNothing();
     await tx
       .insert(s.organizations)
@@ -41,48 +41,63 @@ export async function seedDatabase(db: Database, size = 80, seed?: number) {
       .values(d.projects)
       .onConflictDoNothing();
     await tx.insert(s.effectTypes).values(d.effects).onConflictDoNothing();
-    for (let i = 0; i < d.scenarios.length; i += 250)
-      await tx
+    const createdIds = new Set<string>();
+    for (let i = 0; i < d.scenarios.length; i += 250) {
+      const inserted = await tx
         .insert(s.scenarios)
         .values(d.scenarios.slice(i, i + 250))
-        .onConflictDoNothing();
-    for (let i = 0; i < d.assessments.length; i += 250)
+        .onConflictDoNothing()
+        .returning({ id: s.scenarios.id });
+      inserted.forEach((row) => createdIds.add(row.id));
+    }
+    const fresh = <T extends { scenarioId: string }>(rows: T[]) =>
+      rows.filter((row) => createdIds.has(row.scenarioId));
+    const pending = {
+      assessments: fresh(d.assessments),
+      scenarioTechnologies: fresh(d.scenarioTechnologies),
+      scenarioTasks: fresh(d.scenarioTasks),
+      scenarioEffects: fresh(d.scenarioEffects),
+      scenarioCases: fresh(d.scenarioCases),
+      scenarioSolutions: fresh(d.scenarioSolutions),
+      scenarioProjects: fresh(d.scenarioProjects),
+    };
+    for (let i = 0; i < pending.assessments.length; i += 250)
       await tx
         .insert(s.assessments)
-        .values(d.assessments.slice(i, i + 250))
+        .values(pending.assessments.slice(i, i + 250))
         .onConflictDoNothing();
-    for (let i = 0; i < d.scenarioTechnologies.length; i += 250)
+    for (let i = 0; i < pending.scenarioTechnologies.length; i += 250)
       await tx
         .insert(s.scenarioTechnologies)
-        .values(d.scenarioTechnologies.slice(i, i + 250))
+        .values(pending.scenarioTechnologies.slice(i, i + 250))
         .onConflictDoNothing();
-    for (let i = 0; i < d.scenarios.length; i += 250) {
+    for (let i = 0; i < pending.scenarioTasks.length; i += 250) {
       await tx
         .insert(s.scenarioTasks)
-        .values(d.scenarioTasks.slice(i, i + 250))
+        .values(pending.scenarioTasks.slice(i, i + 250))
         .onConflictDoNothing();
       await tx
         .insert(s.scenarioEffects)
-        .values(d.scenarioEffects.slice(i, i + 250))
+        .values(pending.scenarioEffects.slice(i, i + 250))
         .onConflictDoNothing();
     }
-    if (d.scenarioCases.length)
+    if (pending.scenarioCases.length)
       await tx
         .insert(s.scenarioCases)
-        .values(d.scenarioCases)
+        .values(pending.scenarioCases)
         .onConflictDoNothing();
-    if (d.scenarioSolutions.length)
+    if (pending.scenarioSolutions.length)
       await tx
         .insert(s.scenarioSolutions)
-        .values(d.scenarioSolutions)
+        .values(pending.scenarioSolutions)
         .onConflictDoNothing();
-    if (d.scenarioProjects.length)
+    if (pending.scenarioProjects.length)
       await tx
         .insert(s.scenarioProjects)
-        .values(d.scenarioProjects)
+        .values(pending.scenarioProjects)
         .onConflictDoNothing();
+    return seedDemoClassification(tx);
   });
-  const classification = await seedDemoClassification(db);
   return {
     classification,
     scenarios: d.scenarios.length,

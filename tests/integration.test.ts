@@ -19,6 +19,9 @@ import {
 import { applyImport } from "../src/server/import";
 import { prepareImport } from "../src/features/import/parse";
 import { stableId } from "../src/lib/identity";
+import { generateLegacyDataset, generateDataset } from "../scripts/synthetic";
+import { seedDemoClassification } from "../src/server/demo-classification";
+import { functionalGroupId } from "../src/domain/ctv-reference";
 let db: Database, close: () => Promise<void>;
 const config = { migrationsFolder: "src/db/migrations" };
 const mapping = {
@@ -93,6 +96,112 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
         .total,
     ).toBe(80);
   });
+  it("обновляет распознанный демонстрационный сценарий без потери оценок и чужих связей", async () => {
+    await expect(
+      db.transaction(async (tx) => {
+        const legacy = generateLegacyDataset(80).scenarios[0];
+        const expected = generateDataset(80).scenarios[0];
+        const scenarioId = legacy.id;
+        await tx
+          .update(s.scenarios)
+          .set({
+            ...legacy,
+            businessEffect: null,
+            businessChallengeDescription: null,
+          })
+          .where(eq(s.scenarios.id, scenarioId));
+        const foreignMethod =
+          generateDataset(80).scenarioTechnologies[1].methodId;
+        await tx
+          .insert(s.scenarioTechnologies)
+          .values({
+            scenarioId,
+            methodId: foreignMethod,
+            isSynthetic: false,
+          })
+          .onConflictDoNothing();
+        const ratings = await tx
+          .select()
+          .from(s.assessments)
+          .where(eq(s.assessments.scenarioId, scenarioId));
+        expect((await seedDemoClassification(tx)).upgraded).toBe(1);
+        const [updated] = await tx
+          .select()
+          .from(s.scenarios)
+          .where(eq(s.scenarios.id, scenarioId));
+        expect(updated).toMatchObject(expected);
+        expect(
+          await tx
+            .select()
+            .from(s.assessments)
+            .where(eq(s.assessments.scenarioId, scenarioId)),
+        ).toEqual(ratings);
+        const technologies = await tx
+          .select()
+          .from(s.scenarioTechnologies)
+          .where(eq(s.scenarioTechnologies.scenarioId, scenarioId));
+        expect(
+          technologies.some(
+            (row) => row.methodId === foreignMethod && !row.isSynthetic,
+          ),
+        ).toBe(true);
+        expect(
+          technologies.some(
+            (row) =>
+              row.methodId ===
+              generateDataset(80).scenarioTechnologies[0].methodId,
+          ),
+        ).toBe(true);
+        expect((await seedDemoClassification(tx)).upgraded).toBe(0);
+        expect(
+          await tx
+            .select()
+            .from(s.scenarioTechnologies)
+            .where(eq(s.scenarioTechnologies.scenarioId, scenarioId)),
+        ).toEqual(technologies);
+        await tx
+          .update(s.scenarios)
+          .set({ name: "Описание изменено владельцем" })
+          .where(eq(s.scenarios.id, scenarioId));
+        expect((await seedDemoClassification(tx)).preserved).toBe(1);
+        expect(
+          (
+            await tx
+              .select()
+              .from(s.scenarios)
+              .where(eq(s.scenarios.id, scenarioId))
+          )[0].name,
+        ).toBe("Описание изменено владельцем");
+        tx.rollback();
+      }),
+    ).rejects.toThrow("Rollback");
+  });
+  it("не выбирает произвольно ФГ при конфликте двух справочников", async () => {
+    await expect(
+      db.transaction(async (tx) => {
+        const [row] = await tx
+          .select()
+          .from(s.scenarios)
+          .where(eq(s.scenarios.externalId, "SYN-0001"));
+        await tx
+          .update(s.scenarioClassification)
+          .set({
+            businessDirectionId: functionalGroupId("Переработка"),
+          })
+          .where(eq(s.scenarioClassification.scenarioId, row.id));
+        const [projection] = await tx
+          .select()
+          .from(s.scenarioFunctionalGroups)
+          .where(eq(s.scenarioFunctionalGroups.scenarioId, row.id));
+        expect(projection).toMatchObject({
+          groupId: null,
+          name: null,
+          conflict: true,
+        });
+        tx.rollback();
+      }),
+    ).rejects.toThrow("Rollback");
+  });
   it("исправляет только старое название генератора и сохраняет идентификаторы", async () => {
     const migration = readFileSync(
       "src/db/migrations/0003_clean_generated_scenario_names.sql",
@@ -105,10 +214,11 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
           .from(s.scenarios)
           .where(eq(s.scenarios.externalId, "SYN-0001"));
         expect(item.name).not.toMatch(/ · \d+$/);
-        const legacyTitle = `${item.name} · 001`;
+        const legacy = generateLegacyDataset(1).scenarios[0];
+        const legacyTitle = `${legacy.name} · 001`;
         await tx
           .update(s.scenarios)
-          .set({ name: legacyTitle })
+          .set({ name: legacyTitle, businessNodeId: legacy.businessNodeId })
           .where(eq(s.scenarios.id, item.id));
         const [imported] = await tx
           .insert(s.scenarios)
@@ -135,7 +245,7 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
         ).toMatchObject({
           id: item.id,
           externalId: item.externalId,
-          name: item.name,
+          name: legacy.name,
         });
         expect(
           (
@@ -203,20 +313,25 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
       .delete(s.organizationalBlocks)
       .where(eq(s.organizationalBlocks.id, blockId));
   });
-  it("каждый элемент полного справочника участвует в фильтрации", async () => {
+  it("фильтрует по полному справочнику ФГ без вымышленных назначений блоков", async () => {
     const refs = await getReferences(db);
     expect(refs.directions.map((d) => d.name)).toContain(
       "Беспилотные воздушные средства",
     );
     expect(refs.directions.map((d) => d.name)).not.toContain("БВС");
-    for (const business of refs.businessDirections)
+    expect(refs.groups).toHaveLength(31);
+    const expected = generateDataset(80).scenarios;
+    for (const group of refs.groups) {
+      const count = expected.filter(
+        (row) => row.functionalGroupId === group.id,
+      ).length;
       expect(
-        (await listScenarios({ businessDirectionId: business.id }, db)).total,
-      ).toBeGreaterThan(0);
-    for (const block of refs.blocks)
+        (await listScenarios({ functionalGroupId: group.id }, db)).total,
+      ).toBe(count);
       expect(
-        (await listScenarios({ blockId: block.id }, db)).total,
-      ).toBeGreaterThan(0);
+        (await listScenarios({ businessDirectionId: group.id }, db)).total,
+      ).toBe(count);
+    }
     for (const direction of refs.directions)
       expect(
         (await listScenarios({ directionId: direction.id }, db)).total,
@@ -261,13 +376,11 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     const method = refs.methods.find(
       (m) => m.technologyId === otherTechnology.id,
     )!;
-    await db
-      .insert(s.scenarioTechnologies)
-      .values({
-        scenarioId: original.id,
-        methodId: method.id,
-        isSynthetic: true,
-      });
+    await db.insert(s.scenarioTechnologies).values({
+      scenarioId: original.id,
+      methodId: method.id,
+      isSynthetic: true,
+    });
     try {
       const data = await scenarioAnalytics({ q: "SYN-0012" }, db);
       expect(data.total).toBe(1);
@@ -322,7 +435,7 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
     expect(
       first.items.some((a) => second.items.some((b) => b.id === a.id)),
     ).toBe(false);
-    expect((await listScenarios({ q: "ПрОгНоЗиРоВаНиЕ" }, db)).total).toBe(16);
+    expect((await listScenarios({ q: "ПрОгНоЗ" }, db)).total).toBe(5);
     expect((await listScenarios({ q: "%" }, db)).total).toBe(0);
   });
   it("фильтрует технологии, процесс и независимые оценки в одном контексте", async () => {
