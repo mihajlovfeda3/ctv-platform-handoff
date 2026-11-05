@@ -331,6 +331,10 @@ test("selection follows the scenario across views without displacing radar label
     .locator(".density-switch")
     .getByText("Группы", { exact: true })
     .press("Enter");
+  await expect(page.locator(".radar-marker-layer")).toHaveAttribute(
+    "data-mode",
+    "groups",
+  );
   await expect(
     page.locator(".radar-marker-layer [data-selection-halo]").first(),
   ).toBeAttached();
@@ -339,10 +343,15 @@ test("selection follows the scenario across views without displacing radar label
   ).toBeVisible();
 
   await tabs.getByText("Каталог", { exact: true }).press("Enter");
+  await expect(tabs.locator('[aria-current="page"]')).toHaveText("Каталог");
+  await expect(page.locator(".catalog")).toHaveAttribute("aria-busy", "false");
   await expect(
     panel.getByText(other.externalId, { exact: true }),
   ).toBeVisible();
   await tabs.getByText("Матрица зрелости", { exact: true }).press("Enter");
+  await expect(tabs.locator('[aria-current="page"]')).toHaveText(
+    "Матрица зрелости",
+  );
   const matrixPoint = page.locator(
     `.matrix-point[data-scenario="${other.id}"]`,
   );
