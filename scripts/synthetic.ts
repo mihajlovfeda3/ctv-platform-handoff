@@ -165,7 +165,7 @@ export function generateLegacyDataset(size = 80, seed = SYNTHETIC_SEED) {
       functionalGroupId: groups[group].id,
       businessNodeId: id(`process:${group}`),
       businessChallenge: tasks[group].name,
-      implementation: (["yes", "no", "unknown"] as const)[i % 3],
+      implementation: i % 3 === 0 ? ("yes" as const) : ("no" as const),
       ooda: (["observe", "orient", "decide", "act"] as const)[group],
       technologyTrend: null,
       projectProposal: i % 3 ? null : "Проверить гипотезу на учебном стенде.",

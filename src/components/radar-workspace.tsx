@@ -90,9 +90,6 @@ export function RadarWorkspace() {
           <span>
             <i className="legend-dot orange" /> Не реализуется
           </span>
-          <span>
-            <i className="legend-dot gray" /> Неизвестно
-          </span>
         </div>
         <span className="muted">Без точек и расчётных показателей</span>
       </div>

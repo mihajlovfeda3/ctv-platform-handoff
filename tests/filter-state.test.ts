@@ -6,6 +6,19 @@ import {
   filterErrors,
   workspaceQuery,
 } from "../src/features/scenarios/filter-state";
+it("ignores only the obsolete unknown implementation filter", () => {
+  const result = workspaceQuery({
+    implementation: "unknown",
+    q: "SYN",
+    page: "2",
+  });
+  expect(result?.query).toMatchObject({
+    implementation: undefined,
+    q: "SYN",
+    page: 2,
+  });
+  expect(filterErrors({ implementation: "unknown" })).toEqual({});
+});
 it("maps legacy business-direction links to the single FG filter", () => {
   const group = functionalGroupId("Переработка");
   const query = workspaceQuery({ businessDirectionId: group })!.query;

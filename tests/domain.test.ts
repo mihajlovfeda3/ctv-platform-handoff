@@ -3,6 +3,8 @@ import {
   assessmentInput,
   scenarioInput,
   scenarioQuery,
+  implementationLabel,
+  implementationLabels,
 } from "../src/domain/scenario";
 import { generateDataset, generateLegacyDataset } from "../scripts/synthetic";
 import { functionalGroupId } from "../src/domain/ctv-reference";
@@ -10,6 +12,16 @@ import { functionalGroupNames } from "../src/domain/terminology";
 import { scenarioProfile } from "../scripts/scenario-profiles";
 
 describe("Предметные правила", () => {
+  it("предлагает два подтверждённых статуса и сохраняет смысл старых данных", () => {
+    expect(Object.keys(implementationLabels)).toEqual(["yes", "no"]);
+    expect(implementationLabel("unknown")).toBe("Статус требует уточнения");
+    expect(
+      scenarioQuery.parse({ implementation: "unknown", q: "SYN" }),
+    ).toMatchObject({ implementation: undefined, q: "SYN" });
+    expect(
+      scenarioQuery.safeParse({ implementation: "unsupported" }).success,
+    ).toBe(false);
+  });
   it.each([
     ["market_maturity", 6],
     ["organizational_readiness", 8],
@@ -69,6 +81,9 @@ describe("Синтетический генератор", () => {
       ),
     ).toEqual(a.assessments);
     expect(new Set(large.scenarios.map((s) => s.id)).size).toBe(2500);
+    expect(new Set(large.scenarios.map((s) => s.implementation))).toEqual(
+      new Set(["yes", "no"]),
+    );
     expect(new Set(a.scenarios.map((s) => s.name)).size).toBe(80);
     expect(a.scenarios.map((row) => row.id)).toEqual(
       generateLegacyDataset(80).scenarios.map((row) => row.id),

@@ -20,6 +20,7 @@ export const scenarioInput = z.object({
   businessChallengeDescription: z.string().max(20000).nullable().optional(),
   businessEffect: z.string().max(20000).nullable().optional(),
   sourceId: z.uuid().nullable().optional(),
+  // unknown is retained only as missing/legacy data, never a confirmed status.
   implementation: z.enum(["yes", "no", "unknown"]).default("unknown"),
   isSynthetic: z.boolean(),
   ooda: z.enum(["observe", "orient", "decide", "act"]).nullable().optional(),
@@ -89,8 +90,8 @@ export const scenarioQuery = z
     businessNodeId: optionalId,
     functionalGroupId: optionalId,
     implementation: z.preprocess(
-      (v) => (v === "" ? undefined : v),
-      z.enum(["yes", "no", "unknown"]).optional(),
+      (v) => (v === "" || v === "unknown" ? undefined : v),
+      z.enum(["yes", "no"]).optional(),
     ),
     maturity: optionalScore(5),
     readiness: optionalScore(7),
@@ -113,8 +114,12 @@ export type ScenarioQuery = z.infer<typeof scenarioQuery>;
 export const implementationLabels = {
   yes: "Реализуется",
   no: "Не реализуется",
-  unknown: "Неизвестно",
 };
+export function implementationLabel(value: string) {
+  return value === "yes" || value === "no"
+    ? implementationLabels[value]
+    : "Статус требует уточнения";
+}
 export const oodaLabels = {
   observe: "Наблюдение",
   orient: "Ориентация",

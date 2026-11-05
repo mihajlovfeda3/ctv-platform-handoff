@@ -254,7 +254,9 @@ test("point/cell tooltips, inspector, full card return, unknown selection and Es
   )![0];
   const cell = page.locator(`button[data-cell="${key}"]`);
   await cell.focus();
-  await expect(page.getByRole("tooltip")).toContainText("Статус неизвестен:");
+  await expect(page.getByRole("tooltip")).toContainText(
+    "Требуют уточнения статуса:",
+  );
   await cell.press("Enter");
   await expect(page.locator(".group-members a")).toHaveCount(
     cells.get(key)!.length,

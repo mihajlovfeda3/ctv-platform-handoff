@@ -25,6 +25,57 @@ const row = {
   og: null,
 };
 describe("Контракт импорта", () => {
+  it.each(["csv", "json"] as const)(
+    "проверяет статус реализации при импорте %s",
+    (format) => {
+      const statusMapping = {
+        columns: {
+          externalId: "id",
+          name: "title",
+          description: "description",
+          implementation: "status",
+        },
+      };
+      for (const status of [
+        "yes",
+        "no",
+        "unknown",
+        "unsupported",
+        "",
+        true,
+        1,
+        null,
+      ]) {
+        const content =
+          format === "json"
+            ? JSON.stringify([
+                { id: "1", title: "Test", description: "Description", status },
+              ])
+            : `id,title,description,status\n1,Test,Description,${status ?? ""}\n`;
+        const result = prepareImport(content, format, statusMapping, options);
+        const missing = status === "" || status === null;
+        expect(result.valid).toBe(
+          status === "yes" || status === "no" || missing,
+        );
+        if (missing) {
+          expect(result.rows[0].data.implementation).toBe("unknown");
+          expect(result.diagnostics).toContainEqual(
+            expect.objectContaining({
+              field: "implementation",
+              severity: "warning",
+            }),
+          );
+        } else if (status !== "yes" && status !== "no") {
+          expect(result.diagnostics).toContainEqual(
+            expect.objectContaining({
+              field: "implementation",
+              severity: "error",
+            }),
+          );
+        } else expect(result.rows[0].data.implementation).toBe(status);
+      }
+    },
+  );
   it("принимает отдельные формулировки эффекта и описания вызова", () => {
     const result = prepareImport(
       JSON.stringify([

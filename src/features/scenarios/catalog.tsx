@@ -1,4 +1,5 @@
 "use client";
+import { ImplementationStatus } from "@/features/scenarios/implementation-status";
 import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
 import { workspaceHref, cardHref } from "./navigation";
@@ -15,7 +16,7 @@ import {
   SearchX,
 } from "lucide-react";
 import type { ScenarioList } from "@/server/scenarios";
-import { implementationLabels, type ScenarioQuery } from "@/domain/scenario";
+import { type ScenarioQuery } from "@/domain/scenario";
 const subscribe = () => () => {};
 export function ScenarioCatalog({
   result,
@@ -208,10 +209,7 @@ export function ScenarioCatalog({
                     <td>{value("organizational_readiness", 7)}</td>
                     <td>{value("business_impact", 3)}</td>
                     <td>
-                      <span className={`status ${item.implementation}`}>
-                        <i />
-                        {implementationLabels[item.implementation]}
-                      </span>
+                      <ImplementationStatus value={item.implementation} />
                     </td>
                   </tr>
                 );

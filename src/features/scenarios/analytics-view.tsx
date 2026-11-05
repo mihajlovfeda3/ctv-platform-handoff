@@ -215,10 +215,6 @@ export function AnalyticsView({
                 <i style={{ background: statusColors.no }} />
                 Не реализуется
               </span>
-              <span>
-                <i style={{ background: statusColors.unknown }} />
-                Статус неизвестен
-              </span>
             </div>
             <div className="radar-summary-actions">
               {query.selected && !selectionIsPlotted && (

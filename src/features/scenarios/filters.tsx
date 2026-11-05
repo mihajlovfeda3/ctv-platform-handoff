@@ -176,12 +176,7 @@ export function ScenarioFilters({
       });
   if (query.implementation)
     chips.push({
-      label:
-        query.implementation === "yes"
-          ? "Реализуется"
-          : query.implementation === "no"
-            ? "Не реализуется"
-            : "Статус неизвестен",
+      label: query.implementation === "yes" ? "Реализуется" : "Не реализуется",
       keys: ["implementation"],
     });
   for (const [key, label, max] of [
@@ -251,7 +246,6 @@ export function ScenarioFilters({
             [
               { id: "yes", name: "Реализуется" },
               { id: "no", name: "Не реализуется" },
-              { id: "unknown", name: "Неизвестно" },
             ],
             "Любой статус",
           )}
@@ -320,7 +314,6 @@ export function ScenarioFilters({
               [
                 { id: "yes", name: "Реализуется" },
                 { id: "no", name: "Не реализуется" },
-                { id: "unknown", name: "Неизвестно" },
               ],
               "Любой статус",
             )}

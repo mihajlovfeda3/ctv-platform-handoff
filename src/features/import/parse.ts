@@ -161,15 +161,20 @@ export function prepareImport(
     const implementationRaw = read("implementation");
     let implementation: "yes" | "no" | "unknown" = "unknown";
     if (implementationRaw != null && implementationRaw !== "") {
-      if (["yes", "no", "unknown"].includes(String(implementationRaw)))
+      if (implementationRaw === "yes" || implementationRaw === "no")
         implementation = implementationRaw as typeof implementation;
       else
         issue(
           "implementation",
-          "warning",
-          "Неизвестный статус реализации оставлен unknown",
+          "error",
+          "Допустимы только yes или no; исправьте исходный статус реализации",
         );
-    }
+    } else
+      issue(
+        "implementation",
+        "warning",
+        "Статус реализации не указан: сохранён без подтверждения (unknown), требуется явное уточнение",
+      );
     const data = scenarioInput.safeParse({
       id: stableId(
         `import-scenario:${JSON.stringify([options.namespace, externalId])}`,

@@ -1,5 +1,6 @@
 "use client";
 import { memo, useEffect, useMemo, useRef, type RefObject } from "react";
+import { implementationLabel } from "@/domain/scenario";
 import { SelectionHalo } from "./selection-halo";
 import {
   pointPosition,
@@ -141,7 +142,7 @@ export const RadarMarks = memo(function RadarMarks({
                 data-scenario={row.id}
                 role="button"
                 tabIndex={0}
-                aria-label={`${row.externalId}: ${row.name}`}
+                aria-label={`${row.externalId}: ${row.name} · ${implementationLabel(row.implementation)}`}
                 aria-pressed={selected === row.id}
                 cx={cx}
                 cy={cy}
@@ -154,7 +155,7 @@ export const RadarMarks = memo(function RadarMarks({
                 strokeDasharray={row.impact === null ? "2 2" : undefined}
                 {...events}
               >
-                <desc>{`${row.externalId} · ${row.name}\nРЗ ${row.maturity}; ОГ ${row.readiness ?? "неизвестно"}; влияние ${row.impact ?? "неизвестно"}`}</desc>
+                <desc>{`${row.externalId} · ${row.name}\n${implementationLabel(row.implementation)}\nРЗ ${row.maturity}; ОГ ${row.readiness ?? "неизвестно"}; влияние ${row.impact ?? "неизвестно"}`}</desc>
               </circle>
             </g>
           );
@@ -180,7 +181,7 @@ export const RadarMarks = memo(function RadarMarks({
             {...events}
             transform={`translate(${svgCoordinate(node.x + dx)} ${svgCoordinate(node.y + dy)}) scale(${1 / scale})`}
           >
-            <desc>{`${direction} · РЗ ${node.level}\n${node.rows.length} сценариев: реализуется ${node.statuses.yes ?? 0}, не реализуется ${node.statuses.no ?? 0}, неизвестно ${node.statuses.unknown ?? 0}\nНажмите, чтобы открыть состав группы`}</desc>
+            <desc>{`${direction} · РЗ ${node.level}\n${node.rows.length} сценариев: реализуется ${node.statuses.yes ?? 0}, не реализуется ${node.statuses.no ?? 0}, требуют уточнения статуса ${node.statuses.unknown ?? 0}\nНажмите, чтобы открыть состав группы`}</desc>
             {dx || dy ? (
               <line
                 x1={svgCoordinate(-dx * scale)}

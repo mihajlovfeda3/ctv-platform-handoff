@@ -88,6 +88,71 @@ describe(`Интеграция: ${process.env.TEST_DATABASE_URL ? "PostgreSQL" :
   afterAll(async () => {
     if (close) await close();
   });
+  it("сохраняет старый unknown при seed и не считает его подтверждённым no", async () => {
+    const id = generateDataset().scenarios[2].id;
+    const before = await getScenario(id, db);
+    await db
+      .update(s.scenarios)
+      .set({ implementation: "unknown" })
+      .where(eq(s.scenarios.id, id));
+    try {
+      await seedDatabase(db, 80);
+      const after = await getScenario(id, db);
+      expect(after).toEqual({
+        ...before,
+        scenario: { ...before!.scenario, implementation: "unknown" },
+      });
+      expect(
+        (await listScenarios({ q: "SYN-0003", implementation: "unknown" }, db))
+          .items[0].implementation,
+      ).toBe("unknown");
+      expect(
+        (await listScenarios({ q: "SYN-0003", implementation: "no" }, db))
+          .total,
+      ).toBe(0);
+      expect(
+        (
+          await scenarioAnalytics(
+            { q: "SYN-0003", implementation: "unknown" },
+            db,
+          )
+        ).rows[0].implementation,
+      ).toBe("unknown");
+    } finally {
+      await db
+        .update(s.scenarios)
+        .set({ implementation: before!.scenario.implementation })
+        .where(eq(s.scenarios.id, id));
+    }
+  });
+  it("отклоняет импорт unsupported и unknown без записи сценария", async () => {
+    for (const implementation of ["unknown", "unsupported"]) {
+      const prepared = prepareImport(
+        JSON.stringify([
+          {
+            id: "invalid-status",
+            title: "Test",
+            description: "Test",
+            implementation,
+          },
+        ]),
+        "json",
+        {
+          columns: {
+            externalId: "id",
+            name: "title",
+            description: "description",
+            implementation: "implementation",
+          },
+        },
+        options,
+      );
+      await expect(applyImport(db, prepared)).rejects.toThrow(
+        "Импорт содержит ошибки",
+      );
+    }
+    expect((await listScenarios({ q: "invalid-status" }, db)).total).toBe(0);
+  });
   it("применяет миграции повторно и повторяет seed без дублей", async () => {
     await seedDatabase(db, 80);
     expect((await listScenarios({}, db)).total).toBe(80);

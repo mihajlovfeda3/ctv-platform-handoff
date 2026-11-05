@@ -19,7 +19,7 @@ export function MatrixCells({
       .map(([, rows]) => rows.length),
   );
   const tooltip = (maturity: number, readiness: number, rows: AnalyticRow[]) =>
-    `РЗ ${maturity}/5 · ОГ ${readiness}/7\nСценариев: ${rows.length}\nРеализуется: ${rows.filter((r) => r.implementation === "yes").length}\nНе реализуется: ${rows.filter((r) => r.implementation === "no").length}\nСтатус неизвестен: ${rows.filter((r) => r.implementation === "unknown").length}`;
+    `РЗ ${maturity}/5 · ОГ ${readiness}/7\nСценариев: ${rows.length}\nРеализуется: ${rows.filter((r) => r.implementation === "yes").length}\nНе реализуется: ${rows.filter((r) => r.implementation === "no").length}\nТребуют уточнения статуса: ${rows.filter((r) => r.implementation === "unknown").length}`;
   return (
     <div className="matrix-cells-layout">
       <span id="matrix-selected-cell" hidden>

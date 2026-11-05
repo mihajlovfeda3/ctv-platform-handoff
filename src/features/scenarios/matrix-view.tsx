@@ -50,10 +50,6 @@ export function MatrixView({
             <i style={{ background: statusColors.no }} />
             Не реализуется
           </span>
-          <span>
-            <i style={{ background: statusColors.unknown }} />
-            Статус неизвестен
-          </span>
         </div>
         <div className="matrix-summary-actions">
           {query.selected &&

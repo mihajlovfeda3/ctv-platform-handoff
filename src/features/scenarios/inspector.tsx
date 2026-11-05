@@ -1,11 +1,11 @@
 "use client";
+import { ImplementationStatus } from "@/features/scenarios/implementation-status";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Minimize2 } from "lucide-react";
 import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
 import type { getScenario, relatedObjects } from "@/server/scenarios";
 import { Metrics } from "./metrics";
-import { implementationLabels } from "@/domain/scenario";
 import { FloatingInspector } from "./floating-inspector";
 import floatingStyles from "./floating-inspector.module.css";
 export function Inspector({
@@ -115,10 +115,7 @@ export function Inspector({
         </div>
         <div className="inspector-body">
           <h2>{item.scenario.name}</h2>
-          <span className={`status ${item.scenario.implementation}`}>
-            <i />
-            {implementationLabels[item.scenario.implementation]}
-          </span>
+          <ImplementationStatus value={item.scenario.implementation} />
           <p className="inspector-description">{description}</p>
           <div className="catalog-metrics">
             {[
@@ -246,10 +243,7 @@ export function Inspector({
       </header>
       <div className={floatingStyles.body} data-inspector-scroll>
         <h2>{item.scenario.name}</h2>
-        <span className={`status ${item.scenario.implementation}`}>
-          <i />
-          {implementationLabels[item.scenario.implementation]}
-        </span>
+        <ImplementationStatus value={item.scenario.implementation} />
         <p>{description}</p>
         <Metrics
           assessments={item.assessments

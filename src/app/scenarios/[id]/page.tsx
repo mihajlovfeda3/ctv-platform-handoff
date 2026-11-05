@@ -1,12 +1,9 @@
+import { ImplementationStatus } from "@/features/scenarios/implementation-status";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getScenario, relatedObjects } from "@/server/scenarios";
-import {
-  implementationLabels,
-  oodaLabels,
-  scenarioQuery,
-} from "@/domain/scenario";
+import { oodaLabels, scenarioQuery } from "@/domain/scenario";
 import { workspaceHref } from "@/features/scenarios/navigation";
 import { Metrics } from "@/features/scenarios/metrics";
 export const dynamic = "force-dynamic";
@@ -67,10 +64,7 @@ export default async function ScenarioDetail({
         </div>
         <h1>{s.name}</h1>
         <p>{s.description.trim() || "Не указано"}</p>
-        <span className={`status ${s.implementation}`}>
-          <i />
-          {implementationLabels[s.implementation]}
-        </span>
+        <ImplementationStatus value={s.implementation} />
       </header>
       <section className="surface card-context">
         <div>

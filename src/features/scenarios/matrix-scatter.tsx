@@ -14,7 +14,7 @@ import {
   matrixGeometry,
   matrixZones,
 } from "@/domain/matrix-layout";
-import { implementationLabels } from "@/domain/scenario";
+import { implementationLabel } from "@/domain/scenario";
 import type { WorkspaceQuery } from "./filter-state";
 
 export function MatrixScatter({
@@ -193,7 +193,7 @@ export function MatrixScatter({
           const x = plot.x(p.x),
             y = plot.y(p.y),
             r = pointRadius(row.impact) * density;
-          const tip = `${row.name}\nРЗ ${row.maturity}/5 · ОГ ${row.readiness}/7 · влияние ${row.impact === null ? "неизвестно" : `${row.impact}/3`}\n${implementationLabels[row.implementation as keyof typeof implementationLabels]}`;
+          const tip = `${row.name}\nРЗ ${row.maturity}/5 · ОГ ${row.readiness}/7 · влияние ${row.impact === null ? "неизвестно" : `${row.impact}/3`}\n${implementationLabel(row.implementation)}`;
           const pick = () => navigate({ selected: row.id });
           return (
             <g key={row.id}>
