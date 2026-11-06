@@ -275,6 +275,7 @@ test("view titles, clean catalogue rows and searchable keyboard-accessible filte
     "Каталог",
     "Технологический радар",
     "Матрица зрелости",
+    "3D-куб",
   ]);
   await expect(page.locator(".catalog th")).toHaveCount(5);
   await expect(page.locator(".catalog th").first()).toHaveText("Название");
