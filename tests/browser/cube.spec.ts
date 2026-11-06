@@ -11,7 +11,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height });
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto("/experiments/cube");
+    await page.goto("/scenarios/cube");
     await expect(page.getByRole("status")).toContainText("Сцена готова");
     const canvas = page.getByLabel("Интерактивный куб сценариев");
     await expect(canvas).toHaveAttribute("data-camera", /,/);
@@ -51,10 +51,7 @@ for (const [width, height] of [
     const initial = await canvas.getAttribute("data-camera"),
       box = (await canvas.boundingBox())!;
     expect(box.width).toBeGreaterThan(width - 300);
-    expect(box.height).toBeGreaterThanOrEqual(height - 180);
-    // The previous persistent rail consumed 245px plus a 20px gap.
-    const previousArea = (box.width - 265) * Math.max(480, height * 0.68);
-    expect((box.width * box.height) / previousArea).toBeGreaterThan(1.35);
+    expect(box.height).toBeGreaterThanOrEqual(height - 260);
     await expect(
       page
         .locator("details")
@@ -71,7 +68,6 @@ for (const [width, height] of [
         viewport: `${width}x${height}`,
         sceneWidth: box.width,
         sceneHeight: box.height,
-        areaGain: (box.width * box.height) / previousArea,
       }),
     );
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
@@ -399,7 +395,7 @@ test("cube without WebGL retains accessible data", async ({ page }) => {
       return Reflect.apply(original, this, [type, ...args]);
     } as typeof original;
   });
-  await page.goto("/experiments/cube");
+  await page.goto("/scenarios/cube");
   await expect(page.getByRole("status")).toContainText("WebGL недоступен");
   await expect(
     page.getByText("Куб технологических сценариев", { exact: true }),

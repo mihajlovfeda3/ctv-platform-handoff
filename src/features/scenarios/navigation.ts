@@ -3,6 +3,7 @@ export const views = {
   catalog: "Каталог",
   radar: "Технологический радар",
   maturity: "Матрица зрелости",
+  cube: "3D-куб",
 } as const;
 export type ScenarioView = keyof typeof views;
 export function workspaceHref(

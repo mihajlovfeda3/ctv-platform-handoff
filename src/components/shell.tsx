@@ -140,6 +140,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="breadcrumb">
               Рабочее пространство <span>/</span>{" "}
               <strong>{active?.label ?? "Сценарии"}</strong>
+              {pathname === "/scenarios/cube" && (
+                <>
+                  <span>/</span>
+                  <strong>3D-куб</strong>
+                </>
+              )}
             </div>
           </header>
         )}
@@ -177,9 +183,11 @@ function Sidebar({
         ? "maturity"
         : pathname === "/scenarios/radar" || pathname === "/scenarios"
           ? "radar"
-          : pathname.startsWith("/scenarios/")
-            ? query.from
-            : null;
+          : pathname === "/scenarios/cube"
+            ? "cube"
+            : pathname.startsWith("/scenarios/")
+              ? query.from
+              : null;
   return (
     <aside
       className="sidebar"
@@ -233,11 +241,13 @@ function Sidebar({
             id={href === "/scenarios" ? "scenario-subnav" : undefined}
             items={
               href === "/scenarios"
-                ? (["catalog", "radar", "maturity"] as const).map((key) => ({
-                    href: workspaceHref(key as ScenarioView, query),
-                    label: views[key],
-                    active: activeView === key,
-                  }))
+                ? (["catalog", "radar", "maturity", "cube"] as const).map(
+                    (key) => ({
+                      href: workspaceHref(key as ScenarioView, query),
+                      label: views[key],
+                      active: activeView === key,
+                    }),
+                  )
                 : undefined
             }
           />

@@ -1,0 +1,37 @@
+.integration {
+  width: 100%;
+  min-width: 0;
+}
+.tabs {
+  display: flex;
+  padding: 0 12px;
+  margin: 0;
+}
+.filters {
+  margin: 4px 12px 8px;
+  font-size: 11px;
+  color: #52667b;
+}
+.filters summary {
+  cursor: pointer;
+  padding: 5px 0;
+}
+.filters :global(.shared-filter-row) {
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) 180px auto;
+}
+.scene {
+  --cube-stage-offset: 245px;
+}
+.notice {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #52667b;
+}
+@media (max-width: 850px) {
+  .filters :global(.shared-filter-row) {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tabs {
+    gap: 14px;
+  }
+}

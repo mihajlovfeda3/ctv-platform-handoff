@@ -22,9 +22,17 @@ type Runtime = {
   focus: (index: number | null) => void;
   preview: (id: string | null) => void;
   highlight: (index: number | null) => void;
-  select: (id: string) => void;
+  select: (id: string | null, notify?: boolean) => void;
 };
-export function CubePrototype({ data }: { data: Analytics }) {
+export function CubePrototype({
+  data,
+  selectedFromUrl,
+  onSelectionChange,
+}: {
+  data: Analytics;
+  selectedFromUrl?: string | null;
+  onSelectionChange?: (id: string | null) => void;
+}) {
   const stage = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     labels = useRef<(HTMLButtonElement | null)[]>([]),
@@ -37,9 +45,22 @@ export function CubePrototype({ data }: { data: Analytics }) {
   const [status, setStatus] = useState("Загрузка сцены…"),
     [unavailable, setUnavailable] = useState(false),
     [direction, setDirection] = useState<number | null>(null),
-    [selected, setSelected] = useState<string | null>(null),
+    [localSelected, setSelected] = useState<string | null>(
+      selectedFromUrl ?? null,
+    ),
     [hover, setHover] = useState<AnalyticRow | null>(null),
     [coincident, setCoincident] = useState<AnalyticRow[]>([]);
+  const selected =
+    selectedFromUrl === undefined ? localSelected : selectedFromUrl;
+  const selectedRef = useRef(selected),
+    selectionCallback = useRef(onSelectionChange);
+  useEffect(() => {
+    selectionCallback.current = onSelectionChange;
+  }, [onSelectionChange]);
+  useEffect(() => {
+    selectedRef.current = selected;
+    runtime.current?.select(selected, false);
+  }, [selected]);
   const points = useMemo(
     () =>
       data.rows.flatMap((row) =>
@@ -331,7 +352,7 @@ export function CubePrototype({ data }: { data: Analytics }) {
       let focused = false;
       let frame = 0,
         active: number | null = null,
-        chosen: string | null = null,
+        chosen: string | null = selectedRef.current,
         previewed: string | null = null;
       function requestDraw() {
         if (!frame && !cancelled) frame = requestAnimationFrame(draw);
@@ -564,10 +585,11 @@ export function CubePrototype({ data }: { data: Analytics }) {
         updateProjection(chosen);
         appearance();
       }
-      function select(id: string) {
+      function select(id: string | null, notify = true) {
         chosen = id;
-        element.dataset.selected = id;
+        element.dataset.selected = id ?? "";
         setSelected(id);
+        if (notify) selectionCallback.current?.(id);
         updateProjection(id);
         appearance();
       }
@@ -693,6 +715,9 @@ export function CubePrototype({ data }: { data: Analytics }) {
         renderer.dispose();
         runtime.current = null;
       };
+      appearance();
+      updateProjection(chosen);
+      element.dataset.selected = chosen ?? "";
       setStatus("Сцена готова");
       requestDraw();
     }
@@ -713,7 +738,8 @@ export function CubePrototype({ data }: { data: Analytics }) {
   }
   function chooseScenario(id: string) {
     setSelected(id);
-    runtime.current?.select(id);
+    if (runtime.current) runtime.current.select(id);
+    else selectionCallback.current?.(id);
   }
   return (
     <section className={styles.root}>

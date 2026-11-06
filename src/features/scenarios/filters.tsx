@@ -28,10 +28,17 @@ export function ScenarioFilters({
   invalidDraft?: FilterDraft;
 }) {
   const router = useRouter();
-  const compact = view === "catalog" || view === "radar" || view === "maturity";
+  const compact =
+    view === "catalog" ||
+    view === "radar" ||
+    view === "maturity" ||
+    view === "cube";
   const liveParams = useSearchParams();
   const query = {
     ...serverQuery,
+    ...(view === "cube"
+      ? { selected: liveParams.get("selected") ?? undefined }
+      : {}),
     zoom: Number(liveParams.get("zoom") ?? serverQuery.zoom),
     panX: Number(liveParams.get("panX") ?? serverQuery.panX),
     panY: Number(liveParams.get("panY") ?? serverQuery.panY),

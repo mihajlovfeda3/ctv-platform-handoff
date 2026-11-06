@@ -70,7 +70,7 @@ export const scenarioQuery = z
     panX: z.coerce.number().min(-10000).max(10000).default(0),
     panY: z.coerce.number().min(-10000).max(10000).default(0),
     mode: z.enum(["groups", "points"]).default("groups"),
-    from: z.enum(["catalog", "radar", "maturity"]).default("catalog"),
+    from: z.enum(["catalog", "radar", "maturity", "cube"]).default("catalog"),
     sort: z
       .enum(["id", "name", "maturity", "readiness", "impact"])
       .default("id"),
