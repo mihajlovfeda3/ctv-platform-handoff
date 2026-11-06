@@ -1,17 +1,17 @@
 .root {
-  background: #080f1d;
+  background: #030611;
   color: #dbe7f5;
   border-radius: 16px;
-  padding: 24px;
+  padding: 12px;
   min-width: 0;
-  --line: #26374b;
+  --line: #353739;
 }
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .eyebrow {
   font-size: 10px;
@@ -20,8 +20,8 @@
   text-transform: uppercase;
 }
 .header h1 {
-  font-size: 27px;
-  margin: 7px 0;
+  font-size: 20px;
+  margin: 0;
   color: #edf5ff;
 }
 .header p {
@@ -37,17 +37,15 @@
   color: #99c9ff;
 }
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 245px;
-  gap: 20px;
+  display: block;
 }
 .stage {
   position: relative;
-  height: clamp(480px, 68vh, 820px);
+  height: max(520px, calc(100dvh - 170px));
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: radial-gradient(ellipse at 50% 45%, #14263c, #080e1a 75%);
+  background: #050916;
   touch-action: none;
 }
 .canvas {
@@ -64,26 +62,51 @@
   inset: 0;
   pointer-events: none;
 }
+.leaders {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.leaders line {
+  stroke: #92c7e1;
+  stroke-width: 0.7;
+  opacity: 0.42;
+}
 .vertex {
   position: absolute;
-  transform: translate(-50%, -50%);
   pointer-events: auto;
-  border: 1px solid #4a759c;
-  background: #11243a;
-  color: #bcdfff;
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
-  font-size: 11px;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #c9dfed;
+  border-radius: 7px;
+  padding: 2px 3px;
+  font-size: 10px;
+  line-height: 1.35;
   cursor: pointer;
+  text-shadow:
+    0 1px 4px #030b15,
+    0 0 8px #030b15;
+}
+.vertexIndex {
+  color: #6e9cb8;
+  font-size: 8px;
+  flex-shrink: 0;
 }
 .vertex:hover,
 .vertex[aria-pressed="true"] {
-  background: #bfe9ff;
-  color: #091a2c;
-  box-shadow: 0 0 18px #69c8ff66;
+  background: #152b3a88;
+  color: #f0faff;
+  border-color: #9dd8f0;
+  text-shadow: 0 0 8px #a4e9ff55;
 }
 .toolbar {
+  z-index: 2;
   position: absolute;
   top: 12px;
   left: 12px;
@@ -94,9 +117,10 @@
   font-family: inherit;
 }
 .toolbar button,
+.toolbar summary,
 .focus {
-  background: #15273e;
-  border: 1px solid #385270;
+  background: #27292c;
+  border: 1px solid #474b50;
   border-radius: 6px;
   color: #d2e7ff;
   padding: 7px 10px;
@@ -151,8 +175,8 @@
   color: #e0f1ff;
 }
 .focus {
-  margin: 12px 0;
-  width: 100%;
+  margin: 0;
+  width: auto;
 }
 .legend {
   display: flex;
@@ -276,4 +300,262 @@
 
 .canvas[hidden] {
   display: none;
+}
+
+.impactKey i {
+  display: inline-block;
+  border-radius: 50%;
+  background: #829cb4;
+}
+.direction {
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.direction:hover {
+  background: #18304766;
+  border-color: #537e9c55;
+}
+.fallbackList button[aria-pressed="true"] {
+  color: #edfbff;
+  background: #23506a66;
+  border-radius: 5px;
+}
+
+.levelLabel {
+  position: absolute;
+  display: none;
+  color: #a7c5d5;
+  font-size: 10px;
+  line-height: 18px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px #020912;
+  pointer-events: none;
+}
+
+.eyebrow,
+.header p,
+.tag {
+  display: none;
+}
+.rail {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 6px;
+}
+.rail > .footer {
+  display: none;
+}
+.rail > .detail {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.rail > .detail[aria-live] {
+  flex: 1;
+  min-width: 240px;
+}
+.state {
+  color: #9cabb2;
+  margin: 0;
+  font-size: 10px;
+}
+.legend {
+  padding-top: 8px;
+  color: #aeb5ba;
+}
+.help {
+  color: #929ba2;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.help summary,
+.directionMenu summary {
+  cursor: pointer;
+}
+.directionMenu {
+  position: relative;
+}
+.directionMenu summary {
+  list-style: none;
+}
+.directionMenu h2 {
+  display: none;
+}
+.directionMenu .directions {
+  position: absolute;
+  left: 0;
+  top: 38px;
+  width: 390px;
+  max-width: calc(100vw - 320px);
+  max-height: 420px;
+  overflow: auto;
+  background: #242629;
+  border: 1px solid #4b5055;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 12px 30px #0006;
+}
+.tooltip {
+  bottom: 34px;
+  max-width: 320px;
+  background: #202225ee;
+  border-color: #5c646a;
+  color: #e0e4e7;
+}
+@media (max-width: 1100px) {
+  .layout {
+    display: block;
+  }
+  .stage {
+    height: max(520px, calc(100dvh - 170px));
+  }
+  .root {
+    padding: 12px;
+  }
+  .header h1 {
+    font-size: 20px;
+  }
+}
+@media (max-width: 850px) {
+  .toolbar {
+    flex-wrap: wrap;
+    right: 12px;
+  }
+  .stage {
+    height: calc(100dvh - 160px);
+    min-height: 480px;
+  }
+  .header h1 {
+    font-size: 18px;
+  }
+  .state {
+    max-width: 140px;
+  }
+  .directionMenu .directions {
+    max-width: calc(100vw - 280px);
+  }
+}
+
+.unfold {
+  position: absolute;
+  right: 16px;
+  bottom: 34px;
+  width: clamp(420px, 40%, 560px);
+  max-height: calc(100% - 90px);
+  overflow: auto;
+  box-sizing: border-box;
+  background: #050916f5;
+  border: 1px solid #385064;
+  border-radius: 10px;
+  padding: 14px;
+  z-index: 1;
+  box-shadow: 0 10px 30px #0005;
+}
+.unfold header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  justify-content: space-between;
+}
+.unfold header span {
+  font-size: 10px;
+  color: #84a8c3;
+}
+.unfold h2 {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+  color: #dbe7f5;
+}
+.unfold header button {
+  background: none;
+  border: 0;
+  color: #a8c6dc;
+  cursor: pointer;
+  font-size: 20px;
+}
+.unfoldPlot {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.unfoldPlot line {
+  stroke: #8099af;
+  stroke-opacity: 0.17;
+  stroke-width: 1;
+}
+.unfoldPlot text {
+  fill: #a8bfd3;
+  font-size: 13px;
+}
+.unfoldPlot circle[role="button"] {
+  cursor: pointer;
+  stroke: #d6e6f0;
+  stroke-width: 0.5;
+}
+.unfoldPlot circle[role="button"]:focus,
+.unfoldPlot circle[aria-pressed="true"] {
+  stroke: white;
+  stroke-width: 2;
+  outline: none;
+}
+.unfoldPlot [data-selection-halo] {
+  stroke: #d7f1ff;
+  fill: #8ad2ff14;
+}
+.unfoldNote {
+  font-size: 10px;
+  color: #95adc1;
+  line-height: 1.5;
+  margin: 0;
+}
+.missing {
+  color: #a8bfd3;
+  font-size: 11px;
+  margin-top: 8px;
+}
+.missing button {
+  background: none;
+  border: 0;
+  display: block;
+  text-align: left;
+  color: #bad7eb;
+  padding: 5px;
+  cursor: pointer;
+}
+@media (max-width: 1100px) {
+  .unfold {
+    width: min(440px, 46%);
+    min-width: 360px;
+    padding: 10px;
+  }
+}
+@media (max-width: 850px) {
+  .unfold {
+    width: calc(100% - 24px);
+    min-width: 0;
+    right: 12px;
+    max-height: 62%;
+    bottom: 30px;
+  }
+}
+
+.levelLabel[data-active="true"] {
+  color: #e7f7ff;
+  font-weight: 600;
+}
+
+.readinessHint {
+  position: absolute;
+  top: 58px;
+  left: 14px;
+  max-width: 60%;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #95adc1;
+  pointer-events: none;
 }

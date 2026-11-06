@@ -38,10 +38,10 @@ export function cubePosition(
 }
 export function cubeRadius(impact: number | null) {
   return impact === 1
-    ? 0.025
+    ? 0.02
     : impact === 2
-      ? 0.04
+      ? 0.028
       : impact === 3
-        ? 0.055
-        : 0.018;
+        ? 0.036
+        : 0.015;
 }

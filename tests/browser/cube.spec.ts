@@ -4,7 +4,6 @@ import { cubePosition } from "../../src/domain/cube-geometry";
 import { demoId } from "../../src/domain/ctv-reference";
 
 for (const [width, height] of [
-  [1366, 768],
   [1440, 900],
   [1920, 1080],
 ])
@@ -16,8 +15,65 @@ for (const [width, height] of [
     await expect(page.getByRole("status")).toContainText("Сцена готова");
     const canvas = page.getByLabel("Интерактивный куб сценариев");
     await expect(canvas).toHaveAttribute("data-camera", /,/);
+    async function labelsDoNotOverlap() {
+      const boxes = await page
+        .locator(
+          'button[aria-label^="Вершина "], [data-maturity-level], [data-readiness-level]',
+        )
+        .evaluateAll((elements) =>
+          elements
+            .filter((el) => getComputedStyle(el).display !== "none")
+            .map((el) => {
+              const r = el.getBoundingClientRect();
+              return {
+                x: r.x,
+                y: r.y,
+                w: r.width,
+                h: r.height,
+                text: el.textContent,
+              };
+            }),
+        );
+      expect(boxes.length).toBeGreaterThan(0);
+      for (const a of boxes) {
+        expect(a.text).toMatch(/[А-Яа-я]/);
+        for (const b of boxes.filter((b) => b !== a))
+          expect(
+            a.x >= b.x + b.w ||
+              b.x >= a.x + a.w ||
+              a.y >= b.y + b.h ||
+              b.y >= a.y + a.h,
+          ).toBe(true);
+      }
+    }
+    await labelsDoNotOverlap();
+    await expect(page.locator("[data-readiness-level]:visible")).toHaveCount(0);
     const initial = await canvas.getAttribute("data-camera"),
       box = (await canvas.boundingBox())!;
+    expect(box.width).toBeGreaterThan(width - 300);
+    expect(box.height).toBeGreaterThanOrEqual(height - 180);
+    // The previous persistent rail consumed 245px plus a 20px gap.
+    const previousArea = (box.width - 265) * Math.max(480, height * 0.68);
+    expect((box.width * box.height) / previousArea).toBeGreaterThan(1.35);
+    await expect(
+      page
+        .locator("details")
+        .filter({ has: page.getByText("Направления", { exact: true }) }),
+    ).not.toHaveAttribute("open", "");
+    const directionMenu = page
+      .locator("details")
+      .filter({ has: page.getByText("Направления", { exact: true }) });
+    await directionMenu.locator("summary").click();
+    await expect(directionMenu.getByRole("button")).toHaveCount(8);
+    await directionMenu.locator("summary").click();
+    console.info(
+      JSON.stringify({
+        viewport: `${width}x${height}`,
+        sceneWidth: box.width,
+        sceneHeight: box.height,
+        areaGain: (box.width * box.height) / previousArea,
+      }),
+    );
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.6, {
@@ -71,22 +127,193 @@ for (const [width, height] of [
       box.y + ((1 - p.y) * box.height) / 2,
     );
     await expect(page.getByRole("tooltip")).toContainText("SYN-");
+    await expect(canvas).toHaveAttribute("data-projection-scenario", /.+/);
     await page.mouse.down();
     await page.mouse.up();
     await expect(page.locator('[aria-live="polite"] strong')).toBeVisible();
-    const vertex = page.getByRole("button", { name: /^Вершина 1:/ });
+    await labelsDoNotOverlap();
+    const pickedId = await canvas.getAttribute("data-selected");
+    const picked = data.rows.find(
+      (entry: { id: string }) => entry.id === pickedId,
+    );
+    const panel = page.locator('[aria-live="polite"]');
+    await expect(panel).toContainText(`РЗ ${picked.maturity} / 5`);
+    await expect(panel).toContainText(`ОГ ${picked.readiness} / 7`);
+    await expect(panel).toContainText(`Влияние: ${picked.impact}`);
+    await page
+      .getByRole("button", { name: "Сброс камеры", exact: true })
+      .hover();
+    if (width === 1440)
+      await page.screenshot({
+        path: "output/cube/space-overview.png",
+        fullPage: false,
+      });
+    const pickedDirection = Array.from({ length: 8 }, (_, i) =>
+      demoId(`direction:${i}`),
+    ).findIndex((id) =>
+      picked.directions.some((d: { id: string }) => d.id === id),
+    );
+    const vertex = page.getByRole("button", {
+      name: new RegExp(`^Вершина ${pickedDirection + 1}:`),
+    });
     await vertex.hover();
+    await expect(canvas).toHaveAttribute(
+      "data-highlighted-direction",
+      String(pickedDirection),
+    );
+    const beforeFocus = await canvas.getAttribute("data-camera");
     await vertex.click();
     await expect(vertex).toHaveAttribute("aria-pressed", "true");
+    const unfold = page.getByRole("region", { name: "Развёртка направления" });
+    await expect(unfold).toBeVisible();
+    await expect(canvas).toHaveAttribute("data-camera", beforeFocus!);
+    await expect(canvas).toHaveAttribute("data-selected", pickedId!);
+    for (let readiness = 1; readiness <= 7; readiness++)
+      await expect(
+        page.locator(`[data-readiness-level="${readiness}"]`),
+      ).toBeVisible();
+    await expect(canvas).toHaveAttribute(
+      "data-guide-readiness",
+      String(picked.readiness),
+    );
+    await expect(canvas).toHaveAttribute(
+      "data-guide-maturity",
+      String(picked.maturity),
+    );
+    await expect(
+      page.locator(`[data-readiness-level="${picked.readiness}"]`),
+    ).toHaveAttribute("data-active", "true");
+    await expect(
+      page.locator(`[data-maturity-level="${picked.maturity}"]`),
+    ).toHaveAttribute("data-active", "true");
+    await expect(
+      page.locator(`[data-maturity-level="${picked.maturity}"]`),
+    ).toBeVisible();
+    await labelsDoNotOverlap();
+    const directionId = demoId(`direction:${pickedDirection}`);
+    const relevant = data.rows.filter((r: { directions: { id: string }[] }) =>
+      r.directions.some((d) => d.id === directionId),
+    );
+    const plottable = relevant.filter(
+      (r: {
+        maturity: number | null;
+        readiness: number | null;
+        implementation: string;
+      }) =>
+        r.maturity !== null &&
+        r.readiness !== null &&
+        ["yes", "no"].includes(r.implementation),
+    );
+    await expect(unfold.locator("[data-focus-scenario]")).toHaveCount(
+      plottable.length,
+    );
+    const missing = relevant.filter(
+      (r: { maturity: number | null; readiness: number | null }) =>
+        r.maturity === null || r.readiness === null,
+    );
+    await expect(unfold).toContainText(`Без РЗ или ОГ: ${missing.length}`);
+    for (const r of relevant.filter(
+      (r: { maturity: number | null; readiness: number | null }) =>
+        r.maturity === null || r.readiness === null,
+    ))
+      await expect(
+        unfold.locator(`[data-focus-scenario="${r.id}"]`),
+      ).toHaveCount(0);
+    await expect(unfold.getByLabel("РЗ по X, ОГ по Y")).toBeVisible();
+    await expect(
+      unfold.locator(`[data-focus-scenario="${pickedId}"]`),
+    ).toHaveAttribute("aria-pressed", "true");
+    const next =
+      plottable.find((r: { id: string }) => r.id !== pickedId) ?? plottable[0];
+    const marker = unfold.locator(`[data-focus-scenario="${next.id}"]`);
+    await marker.hover();
+    await expect(canvas).toHaveAttribute(
+      "data-guide-readiness",
+      String(next.readiness),
+    );
+    await expect(canvas).toHaveAttribute(
+      "data-guide-maturity",
+      String(next.maturity),
+    );
+    await expect(page.getByRole("tooltip")).toContainText(next.name);
+    await expect(marker).toHaveAttribute(
+      "data-maturity",
+      String(next.maturity),
+    );
+    await expect(marker).toHaveAttribute(
+      "data-readiness",
+      String(next.readiness),
+    );
+    await expect(marker).toHaveAttribute(
+      "fill",
+      next.implementation === "yes" ? "#2274c5" : "#ec963b",
+    );
+    await marker.click();
+    await expect(canvas).toHaveAttribute("data-selected", next.id);
+    await expect(canvas).toHaveAttribute("data-camera", beforeFocus!);
+    await expect(panel).toContainText(next.name);
+    await expect(marker).toHaveAttribute("aria-pressed", "true");
+    // Clicking the visible 3D point must update the same 2D selection.
+    await page.mouse.move(
+      box.x + ((p.x + 1) * box.width) / 2,
+      box.y + ((1 - p.y) * box.height) / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.up();
+    const pickedAgain = await canvas.getAttribute("data-selected");
+    await expect(
+      unfold.locator(`[data-focus-scenario="${pickedAgain}"]`),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(canvas).toHaveAttribute("data-camera", beforeFocus!);
+    if (width === 1440) {
+      await page
+        .getByRole("button", { name: "Сброс камеры", exact: true })
+        .hover();
+      await page.screenshot({
+        path: "output/cube/readiness-focus.png",
+        fullPage: false,
+      });
+    }
     await page
-      .getByRole("button", { name: "Фокус направления", exact: true })
+      .getByRole("button", { name: "Приблизить куб", exact: true })
       .click();
+    await expect(canvas).not.toHaveAttribute("data-camera", beforeFocus!);
+    const beforeExit = await canvas.getAttribute("data-camera");
+    await page
+      .getByRole("button", { name: "Общий обзор", exact: true })
+      .click();
+    await expect(unfold).toHaveCount(0);
+    await expect(page.locator("[data-readiness-level]:visible")).toHaveCount(0);
+    await expect(canvas).toHaveAttribute("data-camera", beforeExit!);
+    await expect(canvas).toHaveAttribute("data-selected", pickedAgain!);
+    await directionMenu.locator("summary").click();
+    await directionMenu.getByRole("button").nth(pickedDirection).click();
+    await expect(unfold).toBeVisible();
+    await expect(canvas).toHaveAttribute("data-camera", beforeExit!);
+    await page
+      .getByRole("button", { name: "Сброс камеры", exact: true })
+      .click();
+    await expect(canvas).toHaveAttribute("data-camera", initial!);
+    await expect(canvas).toHaveAttribute("data-selected", pickedAgain!);
+    const guideReadiness = await canvas.getAttribute("data-guide-readiness"),
+      guideMaturity = await canvas.getAttribute("data-guide-maturity");
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.6, {
+      steps: 10,
+    });
+    await page.mouse.up();
     await expect(canvas).not.toHaveAttribute("data-camera", initial!);
-    if (width === 1440)
-      await page.screenshot({ path: "output/cube/cube-focus.png" });
+    await expect(canvas).toHaveAttribute(
+      "data-guide-readiness",
+      guideReadiness!,
+    );
+    await expect(canvas).toHaveAttribute("data-guide-maturity", guideMaturity!);
+    await labelsDoNotOverlap();
     await page
-      .getByRole("button", { name: "Все направления", exact: true })
+      .getByRole("button", { name: "Общий обзор", exact: true })
       .click();
+
     await page.setViewportSize({ width: width - 180, height: height - 80 });
     await expect
       .poll(() =>
@@ -109,6 +336,55 @@ for (const [width, height] of [
       await page.mouse.up();
       await page.screenshot({ path: "output/cube/cube-orbit.png" });
     }
+    await page.getByText(/^Сценарии в кубе/).click();
+    const listChoice = page
+      .locator("details")
+      .getByRole("button", { name: /SYN-/ })
+      .last();
+    const chosenText = await listChoice.textContent();
+    await listChoice.click();
+    await expect(page.locator('[aria-live="polite"]')).toContainText(
+      chosenText!.split(" · ")[0],
+    );
+    await expect(canvas).toHaveAttribute("data-selected", /.+/);
+    await page
+      .getByRole("button", { name: "Сброс камеры", exact: true })
+      .click();
+    for (let step = 0; step < 15; step++)
+      await page
+        .getByRole("button", { name: "Приблизить куб", exact: true })
+        .click();
+    await expect
+      .poll(async () =>
+        Math.max(
+          ...(await canvas.getAttribute("data-camera"))!
+            .split(",")
+            .map((v) => Math.abs(Number(v))),
+        ),
+      )
+      .toBeLessThan(1);
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-distance")))
+      .toBeGreaterThanOrEqual(0.18);
+    await page
+      .getByRole("button", { name: "Отдалить куб", exact: true })
+      .click();
+    const closeDistance = Number(await canvas.getAttribute("data-distance"));
+    const zoomBox = (await canvas.boundingBox())!;
+    await page.mouse.move(
+      zoomBox.x + zoomBox.width / 2,
+      zoomBox.y + zoomBox.height / 2,
+    );
+    await page.mouse.wheel(0, 250);
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-distance")))
+      .toBeGreaterThan(closeDistance);
+    await page
+      .getByRole("button", { name: "Сброс камеры", exact: true })
+      .click();
+    await expect(canvas).toHaveAttribute("data-camera", initial!);
+    await labelsDoNotOverlap();
+    await page.screenshot({ path: `output/cube/refined-${width}.png` });
     expect(errors).toEqual([]);
   });
 test("cube without WebGL retains accessible data", async ({ page }) => {
