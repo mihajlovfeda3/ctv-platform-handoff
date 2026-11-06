@@ -14,6 +14,8 @@ import { implementationLabel } from "@/domain/scenario";
 import { cubePosition, cubeRadius, cubeVertex } from "@/domain/cube-geometry";
 import { cubeReadinessGuides } from "./cube-readiness-guides";
 import { layoutCubeLabels, shortDirection } from "./cube-labels";
+import { CubeInspector } from "./cube-inspector";
+import { Maximize2, Minimize2 } from "lucide-react";
 import styles from "./cube-prototype.module.css";
 
 type Runtime = {
@@ -33,6 +35,34 @@ export function CubePrototype({
   selectedFromUrl?: string | null;
   onSelectionChange?: (id: string | null) => void;
 }) {
+  const root = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const change = () =>
+      setFullscreen(document.fullscreenElement === root.current);
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreen(false);
+    };
+    document.addEventListener("fullscreenchange", change);
+    window.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("fullscreenchange", change);
+      window.removeEventListener("keydown", escape);
+    };
+  }, []);
+  async function toggleFullscreen() {
+    if (fullscreen) {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      setFullscreen(false);
+    } else {
+      try {
+        await root.current?.requestFullscreen();
+      } catch {
+        /* Window fallback. */
+      }
+      setFullscreen(true);
+    }
+  }
   const stage = useRef<HTMLDivElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     labels = useRef<(HTMLButtonElement | null)[]>([]),
@@ -742,18 +772,13 @@ export function CubePrototype({
     else selectionCallback.current?.(id);
   }
   return (
-    <section className={styles.root}>
+    <section
+      ref={root}
+      className={`${styles.root} ${fullscreen ? styles.fullscreen : ""}`}
+      data-fullscreen={fullscreen}
+    >
       <header className={styles.header}>
-        <div>
-          <div className={styles.eyebrow}>
-            Лаборатория ЦТВ / Пространственная аналитика
-          </div>
-          <h1>Куб технологических сценариев</h1>
-          <p>Восемь направлений. Три измерения. Единый контекст.</p>
-        </div>
-        <div className={styles.state} role="status">
-          {status} · {visibleRows.length} / {data.total} сценариев
-        </div>
+        <h1>Куб технологических сценариев</h1>
       </header>
       <div className={styles.layout}>
         <div>
@@ -792,12 +817,6 @@ export function CubePrototype({
                     />
                   ))}
                 </svg>
-                {direction !== null && (
-                  <span className={styles.readinessHint}>
-                    ОГ 1 → 7 — вокруг оси направления, без перехода 7 → 1. Лучи
-                    пересекают уровни РЗ.
-                  </span>
-                )}
                 <div className={styles.labels}>
                   {[1, 2, 3, 4, 5, 6, 7].map((level, i) => (
                     <span
@@ -848,6 +867,20 @@ export function CubePrototype({
                 </div>
                 <div className={styles.toolbar}>
                   <button
+                    onClick={toggleFullscreen}
+                    aria-label={
+                      fullscreen
+                        ? "Выйти из полноэкранного режима"
+                        : "Полноэкранный режим"
+                    }
+                  >
+                    {fullscreen ? (
+                      <Minimize2 size={16} />
+                    ) : (
+                      <Maximize2 size={16} />
+                    )}
+                  </button>
+                  <button
                     onClick={() => runtime.current?.zoom(0.85)}
                     aria-label="Приблизить куб"
                   >
@@ -897,9 +930,6 @@ export function CubePrototype({
                     </button>
                   )}
                 </div>
-                <span className={styles.hint}>
-                  Перетаскивайте для вращения · Колесо — масштаб
-                </span>
               </>
             )}
             {direction !== null && (
@@ -1071,9 +1101,22 @@ export function CubePrototype({
                 )}
               </section>
             )}
+            {item && (
+              <CubeInspector
+                key={item.id}
+                row={item}
+                onClose={() => {
+                  setSelected(null);
+                  runtime.current?.select(null);
+                  selectionCallback.current?.(null);
+                }}
+                coincident={coincident}
+                onSelect={chooseScenario}
+              />
+            )}
             {unavailable && (
               <div className={styles.empty}>
-                {status}
+                <span role="status">{status}</span>
                 <div className={styles.fallbackList}>
                   {visibleRows.map((row) => (
                     <button key={row.id} onClick={() => chooseScenario(row.id)}>
@@ -1083,7 +1126,7 @@ export function CubePrototype({
                 </div>
               </div>
             )}
-            {inspected && !unavailable && (
+            {inspected && hover && hover.id !== item?.id && !unavailable && (
               <div className={styles.tooltip} role="tooltip">
                 <b>{inspected.externalId}</b>
                 <br />
@@ -1118,37 +1161,22 @@ export function CubePrototype({
           <details className={styles.help}>
             <summary>Как читать куб</summary>{" "}
             <p className={styles.footer}>
+              Перетаскивайте для вращения · Колесо — масштаб. ОГ 1 → 7 — вокруг
+              оси направления.
+              <br />
               РЗ 5 — ближе к вершине · ОГ 1–7 — положение на сферическом слое.
               <br />
               Короткие подписи у вершин; полные названия — в меню «Направления».
               В фокусе показаны пять уровней РЗ: 5 — ближе к вершине.
             </p>
+            <p>
+              Без РЗ, ОГ или подтверждённого статуса:{" "}
+              {data.rows.length - visibleRows.length}. Эти сценарии не
+              размещаются на предположительных координатах.
+            </p>
           </details>
         </div>
         <aside className={styles.rail}>
-          <div className={styles.detail} aria-live="polite" hidden={!item}>
-            {item ? (
-              <>
-                <span>{item.externalId}</span>
-                <strong>{item.name}</strong>РЗ {item.maturity ?? "не указана"} /
-                5 · ОГ {item.readiness ?? "не указана"} / 7<br />
-                Влияние: {item.impact ?? "не указано"} ·{" "}
-                {implementationLabel(item.implementation)}
-              </>
-            ) : (
-              "Наведите на сферу или выберите сценарий. Совпадающие точки сохраняют точные координаты."
-            )}
-            {coincident.length > 1 && (
-              <>
-                <p>В этой позиции {coincident.length} сценариев:</p>
-                {coincident.map((row) => (
-                  <button key={row.id} onClick={() => chooseScenario(row.id)}>
-                    {row.externalId} · {row.name}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
           <details className={styles.detail}>
             <summary>Сценарии в кубе ({visibleRows.length})</summary>
             <div className={styles.fallbackList}>

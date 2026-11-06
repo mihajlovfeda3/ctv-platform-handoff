@@ -33,7 +33,9 @@ for (const [width, height] of [
     await tabs.getByRole("link", { name: "3D-куб", exact: true }).click();
     await expect(page).toHaveURL(/\/scenarios\/cube\?/);
     await expect(page.locator(".breadcrumb")).toContainText("3D-куб");
-    await expect(page.getByRole("status")).toContainText("Сцена готова");
+    await expect(
+      page.getByLabel("Интерактивный куб сценариев"),
+    ).toHaveAttribute("data-camera", /.+/);
     const canvas = page.getByLabel("Интерактивный куб сценариев");
     await expect(canvas).toHaveAttribute("data-selected", row.id);
     const box = (await canvas.boundingBox())!;
@@ -77,20 +79,22 @@ for (const [width, height] of [
       ).toContainText(selected.name);
     }
     await tabs.getByRole("link", { name: "3D-куб", exact: true }).click();
-    await expect(page.getByRole("status")).toContainText("Сцена готова");
+    await expect(
+      page.getByLabel("Интерактивный куб сценариев"),
+    ).toHaveAttribute("data-camera", /.+/);
     await expect(canvas).toHaveAttribute("data-selected", selected.id);
-    const filters = page
-      .locator("details")
-      .filter({
-        has: page.locator('form[aria-label="Общие фильтры сценариев"]'),
-      });
+    const filters = page.locator("details").filter({
+      has: page.locator('form[aria-label="Общие фильтры сценариев"]'),
+    });
     await filters.locator("summary").first().click();
     await filters.locator('input[name="q"]').fill(selected.externalId);
     await expect
       .poll(() => new URL(page.url()).searchParams.get("q"))
       .toBe(selected.externalId);
     await expect(page).toHaveURL(new RegExp(`selected=${selected.id}`));
-    await expect(page.getByRole("status")).toContainText("1 / 1");
+    await expect(
+      page.getByText("Фильтры сценариев · 1", { exact: true }),
+    ).toBeVisible();
     await expect(canvas).toHaveAttribute("data-selected", selected.id);
     await filters.locator("summary").first().click();
     const directionMenu = page

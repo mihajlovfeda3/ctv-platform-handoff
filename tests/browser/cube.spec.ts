@@ -12,7 +12,9 @@ for (const [width, height] of [
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto("/scenarios/cube");
-    await expect(page.getByRole("status")).toContainText("Сцена готова");
+    await expect(
+      page.getByLabel("Интерактивный куб сценариев"),
+    ).toHaveAttribute("data-camera", /.+/);
     const canvas = page.getByLabel("Интерактивный куб сценариев");
     await expect(canvas).toHaveAttribute("data-camera", /,/);
     async function labelsDoNotOverlap() {
@@ -133,9 +135,9 @@ for (const [width, height] of [
       (entry: { id: string }) => entry.id === pickedId,
     );
     const panel = page.locator('[aria-live="polite"]');
-    await expect(panel).toContainText(`РЗ ${picked.maturity} / 5`);
-    await expect(panel).toContainText(`ОГ ${picked.readiness} / 7`);
-    await expect(panel).toContainText(`Влияние: ${picked.impact}`);
+    await expect(panel).toContainText(`РЗ${picked.maturity}/5`);
+    await expect(panel).toContainText(`ОГ${picked.readiness}/7`);
+    await expect(panel).toContainText(`Влияние${picked.impact}/3`);
     await page
       .getByRole("button", { name: "Сброс камеры", exact: true })
       .hover();
@@ -293,9 +295,9 @@ for (const [width, height] of [
     await expect(canvas).toHaveAttribute("data-selected", pickedAgain!);
     const guideReadiness = await canvas.getAttribute("data-guide-readiness"),
       guideMaturity = await canvas.getAttribute("data-guide-maturity");
-    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5);
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.5);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.6, {
+    await page.mouse.move(box.x + box.width * 0.55, box.y + box.height * 0.6, {
       steps: 10,
     });
     await page.mouse.up();

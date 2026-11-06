@@ -559,3 +559,150 @@
   color: #95adc1;
   pointer-events: none;
 }
+
+.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  border-radius: 0;
+  overflow: auto;
+  box-sizing: border-box;
+  --cube-stage-offset: 110px;
+}
+.root:fullscreen {
+  width: 100%;
+  height: 100%;
+}
+.inspector {
+  position: absolute;
+  z-index: 2;
+  top: 60px;
+  left: 12px;
+  bottom: 16px;
+  width: 330px;
+  display: flex;
+  flex-direction: column;
+  background: #0c111eee;
+  border: 1px solid #385064;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #dbe7f5;
+  overflow: hidden;
+}
+.inspector header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  color: #95adc1;
+}
+.inspector button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.inspector header button {
+  font-size: 22px;
+}
+.inspectorContent {
+  min-height: 0;
+  overflow: auto;
+  flex: 1;
+}
+.inspectorContent > summary {
+  padding: 0 14px 8px;
+  cursor: pointer;
+  color: #95adc1;
+}
+.inspectorBody {
+  padding: 0 14px 14px;
+  line-height: 1.6;
+}
+.inspector h2 {
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 4px 0 12px;
+}
+.inspector h3 {
+  font-size: 11px;
+  color: #95adc1;
+  margin-bottom: 4px;
+}
+.inspector dt {
+  color: #95adc1;
+  margin-top: 10px;
+}
+.inspector dd {
+  margin: 2px 0;
+}
+.inspector footer {
+  padding: 12px 14px;
+  border-top: 1px solid #353739;
+}
+.inspector footer a {
+  display: block;
+  text-align: center;
+  color: #e3efff;
+  background: #17385b;
+  border: 1px solid #385e83;
+  border-radius: 6px;
+  padding: 9px;
+  text-decoration: none;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+}
+.metrics div {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #353739;
+  border-radius: 6px;
+}
+.metrics span {
+  font-size: 10px;
+  color: #95adc1;
+}
+.statusBadge {
+  color: #ec963b;
+}
+.statusBadge[data-status="yes"] {
+  color: #5ca3ec;
+}
+.toolbar button {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rail {
+  padding: 0;
+}
+@media (max-width: 1400px) {
+  .inspector {
+    width: 300px;
+    bottom: auto;
+    max-height: calc(100% - 80px);
+  }
+  .inspectorContent[open] {
+    max-height: 260px;
+  }
+  .unfold {
+    width: min(420px, 43%);
+    min-width: 0;
+  }
+}
+@media (max-width: 850px) {
+  .inspector {
+    top: 90px;
+    width: min(290px, 43%);
+  }
+  .unfold {
+    width: 45%;
+    max-height: 70%;
+  }
+}
