@@ -4,11 +4,11 @@
 }
 .tabs {
   display: flex;
-  padding: 0 12px;
+  padding: 0;
   margin: 0;
 }
 .filters {
-  margin: 4px 12px 8px;
+  margin: 4px 0 8px;
   font-size: 11px;
   color: #52667b;
 }
@@ -34,4 +34,28 @@
   .tabs {
     gap: 14px;
   }
+}
+
+.top {
+  font-family: "Segoe UI", Arial, sans-serif;
+  padding: 16px 28px 0;
+}
+.heading {
+  margin-bottom: 10px;
+}
+.heading h1 {
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+.tabs a {
+  padding-top: 7px;
+  padding-bottom: 8px;
+}
+.scene :global([data-fullscreen="false"]) > header {
+  display: none;
+}
+
+.topbar:global(.topbar) {
+  height: 48px;
+  padding-inline: 28px;
 }

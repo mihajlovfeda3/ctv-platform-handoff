@@ -68,13 +68,16 @@ export function CubeInspector({
           </p>
           <div className={styles.metrics}>
             {[
-              ["РЗ", row.maturity, 5],
-              ["ОГ", row.readiness, 7],
+              ["Рыночная зрелость", row.maturity, 5],
+              ["Орг. готовность", row.readiness, 7],
               ["Влияние", row.impact, 3],
             ].map(([label, value, max]) => (
               <div key={label}>
+                <b>
+                  {value ?? "—"}
+                  <small> / {max}</small>
+                </b>
                 <span>{label}</span>
-                <b>{value === null ? "—" : `${value}/${max}`}</b>
               </div>
             ))}
           </div>
@@ -108,7 +111,7 @@ export function CubeInspector({
       </details>
       <footer>
         <Link href={cardHref(row.id, "cube", query)}>
-          Открыть полную карточку
+          Открыть полную карточку →
         </Link>
       </footer>
     </aside>

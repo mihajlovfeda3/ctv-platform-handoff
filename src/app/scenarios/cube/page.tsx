@@ -38,16 +38,21 @@ export default async function Page({
   }));
   return (
     <div className={styles.integration}>
-      <CubeNavigation query={query} />
-      <details className={styles.filters}>
-        <summary>Фильтры сценариев · {data.total}</summary>
-        <ScenarioFilters
-          query={query}
-          references={references}
-          view="cube"
-          invalidDraft={parsed.invalidDraft}
-        />
-      </details>
+      <div className={styles.top}>
+        <header className={styles.heading}>
+          <h1>Куб технологических сценариев</h1>
+        </header>
+        <CubeNavigation query={query} />
+        <details className={styles.filters}>
+          <summary>Фильтры сценариев · {data.total}</summary>
+          <ScenarioFilters
+            query={query}
+            references={references}
+            view="cube"
+            invalidDraft={parsed.invalidDraft}
+          />
+        </details>
+      </div>
       <div className={styles.scene}>
         <IntegratedCube data={{ ...data, rows, directions }} />
       </div>

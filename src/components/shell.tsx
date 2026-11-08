@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import cubeStyles from "@/features/cube/cube-integration.module.css";
 import { ScenariosIcon } from "./scenarios-icon";
 import { NavigationGroup } from "./navigation-group";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -136,7 +137,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </div>
       <div className="main-shell">
         {pathname !== "/overview" && (
-          <header className="topbar">
+          <header
+            className={`topbar ${pathname === "/scenarios/cube" ? cubeStyles.topbar : ""}`}
+          >
             <div className="breadcrumb">
               Рабочее пространство <span>/</span>{" "}
               <strong>{active?.label ?? "Сценарии"}</strong>

@@ -83,9 +83,10 @@ for (const [width, height] of [
       .getByRole("button", { name: "Сброс камеры", exact: true })
       .click();
     await expect(canvas).toHaveAttribute("data-camera", initial!);
-    await page
-      .getByRole("button", { name: "Приблизить куб", exact: true })
-      .click();
+    await canvas.hover({
+      position: { x: (await canvas.boundingBox())!.width / 2, y: 100 },
+    });
+    await page.mouse.wheel(0, -180);
     await expect(canvas).not.toHaveAttribute("data-camera", initial!);
     await page
       .getByRole("button", { name: "Сброс камеры", exact: true })
@@ -135,9 +136,11 @@ for (const [width, height] of [
       (entry: { id: string }) => entry.id === pickedId,
     );
     const panel = page.locator('[aria-live="polite"]');
-    await expect(panel).toContainText(`РЗ${picked.maturity}/5`);
-    await expect(panel).toContainText(`ОГ${picked.readiness}/7`);
-    await expect(panel).toContainText(`Влияние${picked.impact}/3`);
+    await expect(panel).toContainText(
+      `${picked.maturity} / 5Рыночная зрелость`,
+    );
+    await expect(panel).toContainText(`${picked.readiness} / 7Орг. готовность`);
+    await expect(panel).toContainText(`${picked.impact} / 3Влияние`);
     await page
       .getByRole("button", { name: "Сброс камеры", exact: true })
       .hover();
@@ -272,9 +275,10 @@ for (const [width, height] of [
         fullPage: false,
       });
     }
-    await page
-      .getByRole("button", { name: "Приблизить куб", exact: true })
-      .click();
+    await canvas.hover({
+      position: { x: (await canvas.boundingBox())!.width / 2, y: 100 },
+    });
+    await page.mouse.wheel(0, -180);
     await expect(canvas).not.toHaveAttribute("data-camera", beforeFocus!);
     const beforeExit = await canvas.getAttribute("data-camera");
     await page
@@ -348,10 +352,12 @@ for (const [width, height] of [
     await page
       .getByRole("button", { name: "Сброс камеры", exact: true })
       .click();
-    for (let step = 0; step < 15; step++)
-      await page
-        .getByRole("button", { name: "Приблизить куб", exact: true })
-        .click();
+    await canvas.hover({
+      position: { x: (await canvas.boundingBox())!.width / 2, y: 100 },
+    });
+    for (let step = 0; step < 75; step++) {
+      await page.mouse.wheel(0, -180);
+    }
     await expect
       .poll(async () =>
         Math.max(
@@ -364,9 +370,10 @@ for (const [width, height] of [
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-distance")))
       .toBeGreaterThanOrEqual(0.18);
-    await page
-      .getByRole("button", { name: "Отдалить куб", exact: true })
-      .click();
+    await canvas.hover({
+      position: { x: (await canvas.boundingBox())!.width / 2, y: 100 },
+    });
+    await page.mouse.wheel(0, 180);
     const closeDistance = Number(await canvas.getAttribute("data-distance"));
     const zoomBox = (await canvas.boundingBox())!;
     await page.mouse.move(
@@ -400,7 +407,10 @@ test("cube without WebGL retains accessible data", async ({ page }) => {
   await page.goto("/scenarios/cube");
   await expect(page.getByRole("status")).toContainText("WebGL недоступен");
   await expect(
-    page.getByText("Куб технологических сценариев", { exact: true }),
+    page.getByRole("heading", {
+      name: "Куб технологических сценариев",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.getByRole("button", { name: /SYN-/ }).first().click();
   await expect(page.locator('[aria-live="polite"] strong')).toBeVisible();

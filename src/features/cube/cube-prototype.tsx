@@ -15,7 +15,7 @@ import { cubePosition, cubeRadius, cubeVertex } from "@/domain/cube-geometry";
 import { cubeReadinessGuides } from "./cube-readiness-guides";
 import { layoutCubeLabels, shortDirection } from "./cube-labels";
 import { CubeInspector } from "./cube-inspector";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, RotateCcw } from "lucide-react";
 import styles from "./cube-prototype.module.css";
 
 type Runtime = {
@@ -865,10 +865,17 @@ export function CubePrototype({
                     </button>
                   ))}
                 </div>
-                <div className={styles.toolbar}>
+                <div
+                  className={`${styles.toolbar} ${styles.fullscreenControl}`}
+                >
                   <button
                     onClick={toggleFullscreen}
                     aria-label={
+                      fullscreen
+                        ? "Выйти из полноэкранного режима"
+                        : "Полноэкранный режим"
+                    }
+                    title={
                       fullscreen
                         ? "Выйти из полноэкранного режима"
                         : "Полноэкранный режим"
@@ -880,20 +887,14 @@ export function CubePrototype({
                       <Maximize2 size={16} />
                     )}
                   </button>
+                </div>
+                <div className={styles.toolbar}>
                   <button
-                    onClick={() => runtime.current?.zoom(0.85)}
-                    aria-label="Приблизить куб"
+                    onClick={() => runtime.current?.reset()}
+                    aria-label="Сброс камеры"
+                    title="Сброс камеры"
                   >
-                    +
-                  </button>
-                  <button
-                    onClick={() => runtime.current?.zoom(1.18)}
-                    aria-label="Отдалить куб"
-                  >
-                    −
-                  </button>
-                  <button onClick={() => runtime.current?.reset()}>
-                    Сброс камеры
+                    <RotateCcw size={16} />
                   </button>
                   <details className={styles.directionMenu}>
                     <summary>Направления</summary>{" "}

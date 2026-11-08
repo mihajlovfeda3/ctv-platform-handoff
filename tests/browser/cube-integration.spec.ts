@@ -108,9 +108,10 @@ for (const [width, height] of [
     await page
       .getByRole("button", { name: "Общий обзор", exact: true })
       .click();
-    await page
-      .getByRole("button", { name: "Приблизить куб", exact: true })
-      .click();
+    await canvas.hover({
+      position: { x: (await canvas.boundingBox())!.width / 2, y: 100 },
+    });
+    await page.mouse.wheel(0, -180);
     await page
       .getByRole("button", { name: "Сброс камеры", exact: true })
       .click();
