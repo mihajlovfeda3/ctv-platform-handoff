@@ -207,10 +207,10 @@ test("inspector open/close, sort/reset and card return preserve intended scroll/
     await page.evaluate(() => scrollY),
   );
   await page
-    .getByRole("link", { name: "Открыть полную карточку →" })
+    .getByRole("link", { name: "Открыть полную карточку" })
     .scrollIntoViewIfNeeded();
   const returnY = await page.evaluate(() => scrollY);
-  await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
+  await page.getByRole("link", { name: "Открыть полную карточку" }).click();
   await expect(page).toHaveURL(new RegExp(`/scenarios/${id}`));
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(page).toHaveURL(/\/radar\?/);

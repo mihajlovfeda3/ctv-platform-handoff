@@ -240,7 +240,7 @@ test("point/cell tooltips, inspector, full card return, unknown selection and Es
   await page.keyboard.press("Escape");
   await expect(popover).toBeHidden();
   expect(new URL(page.url()).searchParams.get("selected")).toBe(id);
-  await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
+  await page.getByRole("link", { name: "Открыть полную карточку" }).click();
   await expect(page).toHaveURL(/from=maturity/);
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(page.locator(".maturity-matrix")).toBeVisible();

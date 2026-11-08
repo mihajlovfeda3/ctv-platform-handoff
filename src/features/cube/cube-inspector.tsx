@@ -1,4 +1,6 @@
 "use client";
+import { ArrowUpRight } from "lucide-react";
+import { ScenarioDescription } from "@/features/scenarios/scenario-description";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -7,6 +9,7 @@ import type { AnalyticRow } from "@/domain/analytics";
 import { implementationLabel } from "@/domain/scenario";
 import { workspaceQuery } from "@/features/scenarios/filter-state";
 import { cardHref } from "@/features/scenarios/navigation";
+import cardStyles from "@/features/scenarios/scenario-cards.module.css";
 import styles from "./cube-prototype.module.css";
 
 export function CubeInspector({
@@ -40,12 +43,11 @@ export function CubeInspector({
   const query = workspaceQuery(Object.fromEntries(params))?.query ?? {};
   return (
     <aside
-      className={styles.inspector}
+      className={`${styles.inspector} ${cardStyles.quick} ${cardStyles.dark}`}
       aria-label="Быстрый просмотр сценария"
       aria-live="polite"
     >
       <header>
-        <span>{row.externalId}</span>
         <button aria-label="Закрыть инспектор" onClick={onClose}>
           ×
         </button>
@@ -59,13 +61,16 @@ export function CubeInspector({
           <span className={styles.statusBadge} data-status={row.implementation}>
             {implementationLabel(row.implementation)}
           </span>
-          <p>
-            {item
-              ? item.scenario.description.trim() || "Описание не указано"
-              : error
-                ? "Не удалось загрузить описание"
-                : "Загрузка описания…"}
-          </p>
+          <ScenarioDescription
+            key={row.id}
+            text={
+              item
+                ? item.scenario.description.trim() || "Описание не указано"
+                : error
+                  ? "Не удалось загрузить описание"
+                  : "Загрузка описания…"
+            }
+          />
           <div className={styles.metrics}>
             {[
               ["Рыночная зрелость", row.maturity, 5],
@@ -110,8 +115,8 @@ export function CubeInspector({
         </div>
       </details>
       <footer>
-        <Link href={cardHref(row.id, "cube", query)}>
-          Открыть полную карточку →
+        <Link className={cardStyles.cta} href={cardHref(row.id, "cube", query)}>
+          Открыть полную карточку <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </footer>
     </aside>

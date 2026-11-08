@@ -90,7 +90,7 @@ test("radar and matrix: whole dataset, zoom, pan, selection, ranges and card ret
   if (data.total > 1000)
     await page.locator("circle[data-scenario]").first().press("Enter");
   else await page.locator("circle[data-scenario]").first().click();
-  await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
+  await page.getByRole("link", { name: "Открыть полную карточку" }).click();
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(page).toHaveURL(/\/scenarios\/radar\?/);
   await expect(page).toHaveURL(/selected=/);

@@ -695,16 +695,16 @@
 }
 .metrics div {
   padding: 10px 7px;
-  background: #111e30;
+  background: transparent;
   border: 1px solid #25364e;
   border-radius: 7px;
 }
 .metrics b {
   display: block;
-  font-size: 22px;
+  font-size: 25px;
   line-height: 1.4;
-  font-weight: 500;
-  color: #6ca9e6;
+  font-weight: 600;
+  color: #83b8ee;
 }
 .metrics small {
   font-size: 11px;
@@ -713,15 +713,16 @@
 .metrics span {
   display: block;
   margin-top: 5px;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.5;
   color: #95a9c2;
 }
 .statusBadge {
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 13px;
   color: #ec963b;
 }
 .statusBadge::before {

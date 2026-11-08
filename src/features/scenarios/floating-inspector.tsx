@@ -8,7 +8,8 @@ import {
   type Ref,
 } from "react";
 import { createPortal } from "react-dom";
-import { Maximize2 } from "lucide-react";
+import cardStyles from "./scenario-cards.module.css";
+import { Maximize2, ArrowUpRight } from "lucide-react";
 import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
 import styles from "./floating-inspector.module.css";
@@ -158,11 +159,11 @@ export function FloatingInspector({
         </div>
       </div>
       <CardLink
-        className={`button ${styles.cardLink}`}
+        className={`button ${styles.cardLink} ${cardStyles.cta}`}
         href={fullHref}
         returnHref={returnHref}
       >
-        Открыть полную карточку →
+        Открыть полную карточку <ArrowUpRight size={16} aria-hidden="true" />
       </CardLink>
     </aside>,
     document.body,

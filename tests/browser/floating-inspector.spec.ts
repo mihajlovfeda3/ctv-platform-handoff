@@ -92,7 +92,7 @@ for (const view of ["radar", "points", "cells"] as const) {
       .not.toBe(firstSelection);
     expect((await panel.boundingBox())!.x).toBeCloseTo(parked.x, 0);
     const selected = new URL(page.url()).searchParams.get("selected")!;
-    const full = panel.getByRole("link", { name: "Открыть полную карточку →" });
+    const full = panel.getByRole("link", { name: "Открыть полную карточку" });
     await expect(full).toHaveAttribute(
       "href",
       new RegExp(`/scenarios/${selected}\\?`),
@@ -124,7 +124,7 @@ test("catalog inspector has its original controls", async ({ page }) => {
     panel.getByRole("button", { name: "Свернуть инспектор" }),
   ).toHaveCount(0);
   await expect(
-    panel.getByRole("link", { name: "Открыть полную карточку →" }),
+    panel.getByRole("link", { name: "Открыть полную карточку" }),
   ).toBeVisible();
 });
 
@@ -145,7 +145,7 @@ for (const [route, mode] of [
     });
     const scrollArea = panel.locator("[data-inspector-scroll]");
     const action = panel.getByRole("link", {
-      name: "Открыть полную карточку →",
+      name: "Открыть полную карточку",
     });
     await expect(panel).toHaveCSS("width", "410px");
     await expect(

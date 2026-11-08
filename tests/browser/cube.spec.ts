@@ -346,7 +346,7 @@ for (const [width, height] of [
     const chosenText = await listChoice.textContent();
     await listChoice.click();
     await expect(page.locator('[aria-live="polite"]')).toContainText(
-      chosenText!.split(" · ")[0],
+      chosenText!.split(" · ").slice(1).join(" · "),
     );
     await expect(canvas).toHaveAttribute("data-selected", /.+/);
     await page

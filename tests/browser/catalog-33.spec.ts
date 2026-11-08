@@ -91,9 +91,9 @@ test("title order and row layout are stable with either sidebar state", async ({
     name: "Быстрый просмотр сценария",
   });
   await expect(inspector.getByRole("heading", { level: 2 })).toHaveText(title);
-  await expect(inspector.getByText("SYN-0004", { exact: true })).toBeVisible();
+  await expect(inspector.getByText("SYN-0004", { exact: true })).toHaveCount(0);
   await inspector
-    .getByRole("link", { name: "Открыть полную карточку →" })
+    .getByRole("link", { name: "Открыть полную карточку" })
     .click();
   await expect(page.locator("h1")).toHaveText(title);
   await expect(page).toHaveURL(new RegExp(`/scenarios/${selected}\\?`));
@@ -254,7 +254,7 @@ test("row keyboard navigation, inspector updates, Esc and full card return retai
   await expect(panel).toBeVisible();
   const top = await page.evaluate(() => scrollY);
   expect(top).toBeGreaterThan(100);
-  await panel.getByRole("link", { name: "Открыть полную карточку →" }).click();
+  await panel.getByRole("link", { name: "Открыть полную карточку" }).click();
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();
   await expect(panel).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(top, 0);

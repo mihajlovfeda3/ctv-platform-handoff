@@ -6,6 +6,7 @@ import { getScenario, relatedObjects } from "@/server/scenarios";
 import { oodaLabels, scenarioQuery } from "@/domain/scenario";
 import { workspaceHref } from "@/features/scenarios/navigation";
 import { Metrics } from "@/features/scenarios/metrics";
+import styles from "@/features/scenarios/scenario-cards.module.css";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Карточка сценария" };
 const names = {
@@ -39,7 +40,7 @@ export default async function ScenarioDetail({
   const date = (d: Date) =>
     new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow" }).format(d);
   return (
-    <div className="page detail-page revised-card">
+    <div className={`page detail-page revised-card ${styles.full}`}>
       <Link
         scroll={false}
         className="back-link"
@@ -56,70 +57,65 @@ export default async function ScenarioDetail({
         ← Вернуться к выборке
       </Link>
       <header className="detail-header">
-        <div className="record-id">
-          {s.externalId}
-          <span className="tag">
-            {s.isSynthetic ? "Синтетическая запись" : "Импортированная запись"}
-          </span>
-        </div>
         <h1>{s.name}</h1>
         <p>{s.description.trim() || "Не указано"}</p>
         <ImplementationStatus value={s.implementation} />
+        <Metrics assessments={current} />
       </header>
-      <section className="surface card-context">
-        <div>
-          <span className="muted">Бизнес-процесс</span>
-          <h3>{item.business ?? "Не указан"}</h3>
-        </div>
-        <div>
-          <span className="muted">Технологическая классификация</span>
-          {related.technologies.map((t) => (
-            <p key={t.id}>
-              {t.direction} → <strong>{t.technology}</strong> → {t.name}
-            </p>
-          ))}
-          {!related.technologies.length && <p>Не сопоставлена</p>}
-        </div>
+      <section className="surface detail-section">
+        <h2>Технологическая классификация</h2>
+        {related.technologies.map((t) => (
+          <ol className={styles.technology} key={t.id}>
+            {[
+              ["Технологическое направление", t.direction],
+              ["Ключевая технология", t.technology],
+              ["Метод использования", t.name],
+            ].map(([label, value]) => (
+              <li key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </li>
+            ))}
+          </ol>
+        ))}
+        {!related.technologies.length && <p>Не сопоставлена</p>}
       </section>
-      <Metrics assessments={current} />
       <section className="surface detail-section">
         <h2>Бизнес-контекст</h2>
-        <dl>
-          {[
-            ["Блок «Газпром нефти»", item.classification?.block],
-            [
-              "Функциональная группа",
-              item.functionalGroup ??
+        <dl className={styles.businessDetails}>
+          <div>
+            <dt>Бизнес-процесс</dt>
+            <dd>{item.business || "Не указано"}</dd>
+          </div>
+          <div>
+            <dt>Функциональная группа</dt>
+            <dd>
+              {item.functionalGroup ??
                 (item.functionalGroupConflict || item.functionalGroupUnmapped
                   ? "Требует сопоставления"
-                  : null),
-            ],
-            [
-              "Происхождение связей классификации",
-              item.classification?.isSynthetic
-                ? "Синтетические назначения"
-                : "Не указано",
-            ],
-            ["Бизнес-вызов", s.businessChallenge],
-            ...(s.businessChallengeDescription?.trim()
-              ? [["Описание бизнес-вызова", s.businessChallengeDescription]]
-              : []),
-            ["Обоснование", s.rationale],
-            ["Предложение проекта", s.projectProposal],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v ?? "Не указано"}</dd>
-            </div>
-          ))}
+                  : "Не указано")}
+            </dd>
+          </div>
+          <div className={styles.wide}>
+            <dt>Бизнес-вызов</dt>
+            <dd>{s.businessChallenge || "Не указано"}</dd>
+            {s.businessChallengeDescription?.trim() && (
+              <>
+                <dt className={styles.challengeLabel}>
+                  Описание бизнес-вызова
+                </dt>
+                <dd>{s.businessChallengeDescription}</dd>
+              </>
+            )}
+          </div>
+          <div className={styles.wide}>
+            <dt>Бизнес-эффект</dt>
+            <dd>{s.businessEffect?.trim() || "Не указано"}</dd>
+          </div>
         </dl>
       </section>
       <section className="surface detail-section linked-objects">
         <h2>Задачи, эффекты и связанные объекты</h2>
-        <div>
-          <h3>Бизнес-эффект</h3>
-          <p>{s.businessEffect?.trim() || "Не указано"}</p>
-        </div>
         {[
           ["Классы задач", related.tasks],
           ["Типы эффектов", related.effects],
@@ -150,9 +146,25 @@ export default async function ScenarioDetail({
         })}
       </section>
       <details className="surface detail-section">
-        <summary>Дополнительные характеристики и происхождение</summary>
+        <summary>
+          Техническая информация и дополнительные характеристики
+        </summary>
         <dl>
           {[
+            ["ID сценария", s.externalId],
+            [
+              "Тип записи",
+              s.isSynthetic ? "Синтетическая запись" : "Импортированная запись",
+            ],
+            ["Блок «Газпром нефти»", item.classification?.block],
+            [
+              "Происхождение связей классификации",
+              item.classification?.isSynthetic
+                ? "Синтетические назначения"
+                : "Не указано",
+            ],
+            ["Обоснование", s.rationale],
+            ["Предложение проекта", s.projectProposal],
             [
               "Цикл OODA",
               s.ooda ? oodaLabels[s.ooda as keyof typeof oodaLabels] : null,

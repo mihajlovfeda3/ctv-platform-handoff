@@ -1,7 +1,9 @@
 "use client";
+import cardStyles from "./scenario-cards.module.css";
 import { ImplementationStatus } from "@/features/scenarios/implementation-status";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Minimize2 } from "lucide-react";
+import { ScenarioDescription } from "./scenario-description";
+import { Minimize2, ArrowUpRight } from "lucide-react";
 import { ContextLink as Link } from "./camera-context";
 import { CardLink } from "./scroll-context";
 import type { getScenario, relatedObjects } from "@/server/scenarios";
@@ -97,12 +99,11 @@ export function Inspector({
       .filter((a) => a.isCurrent && a.organizationalContext === context);
     return (
       <aside
-        className="scenario-inspector catalog-inspector"
+        className={`scenario-inspector catalog-inspector ${cardStyles.quick}`}
         role="region"
         aria-label="Быстрый просмотр сценария"
       >
         <div className="inspector-top">
-          <span>{item.scenario.externalId}</span>
           <Link
             replace
             ref={close}
@@ -116,7 +117,7 @@ export function Inspector({
         <div className="inspector-body">
           <h2>{item.scenario.name}</h2>
           <ImplementationStatus value={item.scenario.implementation} />
-          <p className="inspector-description">{description}</p>
+          <ScenarioDescription key={item.scenario.id} text={description} />
           <div className="catalog-metrics">
             {[
               ["market_maturity", "РЗ", 5],
@@ -133,39 +134,56 @@ export function Inspector({
             })}
           </div>
           <section>
-            <h3>Бизнес-контекст</h3>
-            <dl>
-              <dt>Блок «Газпром нефти»</dt>
-              <dd>{item.classification?.block ?? "Не указан"}</dd>
-              <dt>Функциональная группа</dt>
-              <dd>{group}</dd>
-              <dt>Бизнес-процесс</dt>
-              <dd>{item.business ?? "Не указан"}</dd>
-              <dt>Бизнес-эффект</dt>
-              <dd>{item.scenario.businessEffect?.trim() || "Не указано"}</dd>
-              {related.effects.length > 0 && (
-                <>
-                  <dt>Типы эффектов</dt>
-                  <dd>
-                    {related.effects.map((effect) => effect.name).join(", ")}
-                  </dd>
-                </>
-              )}
-            </dl>
-          </section>
-          <section>
             <h3>Технологическая классификация</h3>
             {related.technologies.length ? (
               related.technologies.map((t) => (
                 <div className="technology-path" key={t.id}>
-                  <strong>{t.direction}</strong>
-                  <span>{t.technology}</span>
-                  <span>{t.name}</span>
+                  <div>
+                    <small>Направление</small>
+                    <strong>{t.direction}</strong>
+                  </div>
+                  <div>
+                    <small>Ключевая технология</small>
+                    <strong>{t.technology}</strong>
+                  </div>
+                  <div>
+                    <small>Метод использования</small>
+                    <strong>{t.name}</strong>
+                  </div>
                 </div>
               ))
             ) : (
               <p>Связанные технологии не указаны</p>
             )}
+          </section>
+          <section className={cardStyles.business}>
+            <h3>Бизнес-контекст</h3>
+            <dl>
+              <div>
+                <dt>Функциональная группа</dt>
+                <dd>{group}</dd>
+              </div>
+              <div>
+                <dt>Бизнес-процесс</dt>
+                <dd>{item.business ?? "Не указан"}</dd>
+              </div>
+              <div>
+                <dt>Бизнес-эффект</dt>
+                <dd>{item.scenario.businessEffect?.trim() || "Не указано"}</dd>
+              </div>
+              {related.effects.length > 0 && (
+                <div>
+                  <dt>Типы эффектов</dt>
+                  <dd>
+                    {related.effects.map((effect) => effect.name).join(", ")}
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt>Блок «Газпром нефти»</dt>
+                <dd>{item.classification?.block ?? "Не указан"}</dd>
+              </div>
+            </dl>
           </section>
           <section>
             <h3>Связанные объекты</h3>
@@ -178,11 +196,12 @@ export function Inspector({
         </div>
         <div className="inspector-footer">
           <CardLink
-            className="button primary"
+            className={`button primary ${cardStyles.cta}`}
             href={fullHref}
             returnHref={closeHref + `&selected=${item.scenario.id}`}
           >
-            Открыть полную карточку →
+            Открыть полную карточку{" "}
+            <ArrowUpRight size={16} aria-hidden="true" />
           </CardLink>
         </div>
       </aside>
@@ -208,12 +227,11 @@ export function Inspector({
   return (
     <aside
       ref={expandedPanel}
-      className={`scenario-inspector ${floatingStyles.expanded}`}
+      className={`scenario-inspector ${floatingStyles.expanded} ${cardStyles.quick}`}
       role="region"
       aria-label="Быстрый просмотр сценария"
     >
       <header className={floatingStyles.header}>
-        <span className="record-id">{item.scenario.externalId}</span>
         <div className={floatingStyles.actions}>
           <button
             type="button"
@@ -244,35 +262,66 @@ export function Inspector({
       <div className={floatingStyles.body} data-inspector-scroll>
         <h2>{item.scenario.name}</h2>
         <ImplementationStatus value={item.scenario.implementation} />
-        <p>{description}</p>
+        <ScenarioDescription key={item.scenario.id} text={description} />
         <Metrics
           assessments={item.assessments
             .map((a) => a.assessment)
             .filter((a) => a.isCurrent && a.organizationalContext === context)}
         />
-        <h3>Блок «Газпром нефти»</h3>
-        <p>{item.classification?.block ?? "Не указан"}</p>
-        <h3>Функциональная группа</h3>
-        <p>{group}</p>
-        {item.classification?.isSynthetic && (
-          <p>Связи классификации синтетические</p>
-        )}
-        <h3>Бизнес-процесс</h3>
-        <p>{item.business ?? "Не указан"}</p>
-        <h3>Технологическая классификация</h3>
-        {related.technologies.map((t) => (
-          <p key={t.id}>
-            {t.direction} → {t.technology} → {t.name}
-          </p>
-        ))}
-        <h3>Бизнес-эффект</h3>
-        <p>{item.scenario.businessEffect?.trim() || "Не указано"}</p>
-        {related.effects.length > 0 && (
-          <p>
-            Типы эффектов:{" "}
-            {related.effects.map((effect) => effect.name).join(", ")}
-          </p>
-        )}
+        <section>
+          <h3>Технологическая классификация</h3>
+          {related.technologies.map((t) => (
+            <div className="technology-path" key={t.id}>
+              <div>
+                <small>Направление</small>
+                <strong>{t.direction}</strong>
+              </div>
+              <div>
+                <small>Ключевая технология</small>
+                <strong>{t.technology}</strong>
+              </div>
+              <div>
+                <small>Метод использования</small>
+                <strong>{t.name}</strong>
+              </div>
+            </div>
+          ))}
+        </section>
+        <section className={cardStyles.business}>
+          <h3>Бизнес-контекст</h3>
+          <dl>
+            <div>
+              <dt>Функциональная группа</dt>
+              <dd>{group}</dd>
+            </div>
+            <div>
+              <dt>Бизнес-процесс</dt>
+              <dd>{item.business ?? "Не указан"}</dd>
+            </div>
+            <div>
+              <dt>Бизнес-эффект</dt>
+              <dd>{item.scenario.businessEffect?.trim() || "Не указано"}</dd>
+            </div>
+            {related.effects.length > 0 && (
+              <div>
+                <dt>Типы эффектов</dt>
+                <dd>
+                  {related.effects.map((effect) => effect.name).join(", ")}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt>Блок «Газпром нефти»</dt>
+              <dd>{item.classification?.block ?? "Не указан"}</dd>
+            </div>
+            {item.classification?.isSynthetic && (
+              <div>
+                <dt>Происхождение классификации</dt>
+                <dd>Связи классификации синтетические</dd>
+              </div>
+            )}
+          </dl>
+        </section>
         <h3>Связанные объекты</h3>
         <p>
           {related.tasks.length} задач · {related.cases.length} кейсов ·{" "}
@@ -282,11 +331,11 @@ export function Inspector({
       </div>
       <footer className={floatingStyles.footer}>
         <CardLink
-          className="button primary"
+          className={`button primary ${cardStyles.cta}`}
           href={fullHref}
           returnHref={closeHref + `&selected=${item.scenario.id}`}
         >
-          Открыть полную карточку →
+          Открыть полную карточку <ArrowUpRight size={16} aria-hidden="true" />
         </CardLink>
       </footer>
     </aside>

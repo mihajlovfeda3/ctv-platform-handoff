@@ -307,7 +307,7 @@ test("outer viewport bounds at 1/3/8x, contextual labels and no camera fetches",
     );
   });
   expect(controlOverlap).toBe(false);
-  await page.getByRole("link", { name: "Открыть полную карточку →" }).click();
+  await page.getByRole("link", { name: "Открыть полную карточку" }).click();
   await expect(page).toHaveURL(/from=radar/);
   expect(Number(new URL(page.url()).searchParams.get("zoom"))).toBeCloseTo(3);
   await page.getByRole("link", { name: "← Вернуться к выборке" }).click();

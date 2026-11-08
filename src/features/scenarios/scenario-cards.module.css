@@ -1,0 +1,392 @@
+.quick {
+  --card-ink: #20364d;
+  --card-text: #40586f;
+  --card-muted: #4b647d;
+  --card-line: #d7e3ef;
+  --card-metric: #fff;
+  --card-accent: #145aa3;
+}
+.quick.dark {
+  --card-ink: #e0e9f5;
+  --card-text: #adbed2;
+  --card-muted: #97aec8;
+  --card-line: #29394e;
+  --card-metric: transparent;
+  --card-accent: #83b8ee;
+}
+.quick.quick > header,
+.quick.quick > :global(.inspector-top) {
+  justify-content: flex-end;
+  border-bottom: 0;
+  padding: 4px 20px 0;
+}
+.quick.quick h2 {
+  color: var(--card-ink);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.35px;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.quick.quick p {
+  color: var(--card-text);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.quick.quick :global(.inspector-description) {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+.quick :global(.status) {
+  display: inline-flex;
+  margin: 0 0 2px;
+  font-size: 11px;
+}
+.quick.quick h3,
+.quick.quick dt {
+  color: var(--card-ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 14px 0 5px;
+}
+.quick.quick dd {
+  color: var(--card-text);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.quick.quick :global(.scenario-metrics),
+.quick.quick :global(.catalog-metrics) {
+  margin: 14px 0 16px;
+  gap: 8px;
+}
+.quick.quick :global(.scenario-metrics) > div,
+.quick.quick :global(.catalog-metrics) > div {
+  padding: 12px 8px;
+  background: var(--card-metric);
+  border-color: var(--card-line);
+}
+.quick.quick :global(.scenario-metrics) strong,
+.quick.quick :global(.catalog-metrics) strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--card-accent);
+}
+.quick.quick :global(.scenario-metrics) span,
+.quick.quick :global(.catalog-metrics) span {
+  color: var(--card-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.quick.quick :global(.technology-path) {
+  display: grid;
+  gap: 10px;
+  border-left: 3px solid #2e7ac5;
+  margin: 10px 0 14px;
+  padding: 2px 0 2px 12px;
+}
+.quick :global(.technology-path) small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--card-muted);
+  margin-bottom: 3px;
+}
+.quick :global(.technology-path) strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--card-ink);
+  font-weight: 500;
+}
+.quick :global(.inspector-footer),
+.quick > footer {
+  flex-shrink: 0;
+}
+.full {
+  font-family: "Segoe UI", Arial, sans-serif;
+  padding-top: 20px;
+}
+.full :global(.detail-header) {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid #dfe8f1;
+  margin-bottom: 18px;
+}
+.full :global(.detail-header) h1 {
+  max-width: 1000px;
+  font-size: clamp(25px, 2.4vw, 34px);
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+  margin: 0 0 14px;
+}
+.full :global(.detail-header) p {
+  max-width: 900px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #40586f;
+  margin: 0 0 14px;
+}
+.full :global(.detail-header) :global(.scenario-metrics) {
+  max-width: 680px;
+  margin: 18px 0 0;
+}
+.full :global(.scenario-metrics) > div {
+  background: #fff;
+  border-color: #d5e3f3;
+  padding: 14px;
+}
+.full :global(.scenario-metrics) strong {
+  font-size: 28px;
+  color: #145aa3;
+}
+.full :global(.detail-section) {
+  padding: 22px;
+  border-color: #e1e9f2;
+  box-shadow: none;
+}
+.full :global(.detail-section) h2 {
+  font-size: 19px;
+  margin-bottom: 16px;
+}
+.full :global(.detail-section) dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 28px;
+}
+.full :global(.detail-section) dl > div {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+.full :global(.detail-section) dt {
+  color: #5a728b;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.full :global(.detail-section) dd {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #273f56;
+  white-space: pre-line;
+}
+.full :global(.linked-objects) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 36px;
+}
+.full :global(.linked-objects) > h2 {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+.full :global(.linked-objects) h3 {
+  font-size: 13px;
+  color: #47627d;
+}
+.full :global(.linked-objects) li {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.full details {
+  color: #657b91;
+}
+.full details summary {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.full details[open] summary {
+  margin-bottom: 24px;
+}
+.full details :is(dd, dt) {
+  font-size: 12px;
+}
+.technology {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.technology li {
+  padding: 0 16px;
+  border-left: 3px solid #2e7ac5;
+}
+.technology span {
+  display: block;
+  font-size: 12px;
+  color: #4b647d;
+  margin-bottom: 8px;
+}
+.technology strong {
+  font-size: 15px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: #29435c;
+}
+@media (max-width: 800px) {
+  .full :global(.detail-section) {
+    padding: 20px;
+  }
+  .full :global(.detail-section) dl,
+  .full :global(.linked-objects),
+  .technology {
+    grid-template-columns: 1fr;
+  }
+}
+.quick > header > button:last-child,
+.quick > :global(.inspector-top) > a:last-child {
+  margin-left: auto;
+}
+
+.full :global(.linked-objects) > div {
+  display: block;
+  border-bottom: 0;
+  padding: 0;
+}
+
+.quick:global(.catalog-inspector) :global(.inspector-body) {
+  padding-top: 6px;
+}
+.quick.quick :global(.inspector-body) section {
+  padding-top: 12px;
+  margin-top: 12px;
+}
+.quick.quick :global(.inspector-body) section > h3 {
+  margin: 0 0 8px;
+}
+.quick.quick :global(.scenario-metrics) small {
+  color: var(--card-muted);
+  font-size: 12px;
+}
+.full :global(.back-link) {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.full :global(.scenario-metrics) span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3e5873;
+  line-height: 1.4;
+}
+.full :global(.scenario-metrics) small {
+  font-size: 12px;
+  color: #52708e;
+}
+.description {
+  margin: 10px 0 12px;
+}
+.quick .description .text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.quick .description .text[data-expanded="false"] {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.descriptionToggle {
+  display: inline-block;
+  border: 0;
+  background: none;
+  padding: 4px 0 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--card-accent);
+  cursor: pointer;
+}
+.descriptionToggle:hover {
+  text-decoration: underline;
+}
+.cta.cta,
+.quick .cta.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.cta svg {
+  flex-shrink: 0;
+}
+
+.quick.quick :global(.status),
+.full :global(.detail-header) :global(.status) {
+  font-size: 13px;
+  font-weight: 600;
+  gap: 7px;
+  line-height: 1.5;
+}
+.quick.quick :global(.status) i,
+.full :global(.detail-header) :global(.status) i {
+  width: 6px;
+  height: 6px;
+}
+.quick.quick section > h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 16px 0 10px;
+}
+.quick.quick .business > h3 {
+  color: var(--card-ink);
+}
+.business dl {
+  margin: 0;
+}
+.quick .business dl > div {
+  padding: 10px 0;
+  border-top: 1px solid var(--card-line);
+}
+.quick .business dl > div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.quick.quick .business dt {
+  font-size: 12px;
+  color: var(--card-muted);
+  margin: 0 0 4px;
+}
+.quick.quick .business dd {
+  color: var(--card-ink);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+.full :global(.detail-section) dt {
+  font-size: 13px;
+  color: #29435c;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.full .businessDetails {
+  gap: 16px 28px;
+}
+.full .businessDetails > .wide {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid #e1e9f2;
+}
+.full .businessDetails .challengeLabel {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #4b647d;
+  font-weight: 500;
+}
+.full .businessDetails dd {
+  max-width: 1000px;
+}

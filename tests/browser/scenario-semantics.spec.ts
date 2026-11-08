@@ -73,7 +73,7 @@ test("one FG and coherent content survive every scenario interface", async ({
     });
   }
   await inspector
-    .getByRole("link", { name: "Открыть полную карточку →" })
+    .getByRole("link", { name: "Открыть полную карточку" })
     .click();
   await expect(page.locator("h1")).toHaveText(row.name);
   await expect(page.locator(".detail-header")).toContainText(
@@ -94,13 +94,13 @@ test("one FG and coherent content survive every scenario interface", async ({
   );
   await page
     .locator("summary")
-    .filter({ hasText: "Дополнительные характеристики" })
+    .filter({ hasText: "Техническая информация" })
     .click();
   await expect(page.getByText("UUID", { exact: true })).toBeVisible();
   await page.locator("summary").filter({ hasText: "Все оценки" }).click();
   await page
     .locator("summary")
-    .filter({ hasText: "Дополнительные характеристики" })
+    .filter({ hasText: "Техническая информация" })
     .click();
   if (process.env.SAVE_SEMANTICS_SCREENSHOTS && info.project.name === "2560") {
     await page.evaluate(() => {
@@ -188,7 +188,7 @@ test("long values and missing fields retain the accepted layout", async ({
   ]);
   await expect(inspector).toContainText("Не указано");
   await inspector
-    .getByRole("link", { name: "Открыть полную карточку →" })
+    .getByRole("link", { name: "Открыть полную карточку" })
     .click();
   await expect(page.locator(".detail-header > p")).toHaveText("Не указано");
   await page.locator("summary").filter({ hasText: "Все оценки" }).click();
