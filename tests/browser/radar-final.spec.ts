@@ -280,11 +280,15 @@ test("selection follows the scenario across views without displacing radar label
     .locator(`[data-scenario-id="${row.id}"]`)
     .locator(".record-title")
     .click();
-  await expect(panel.getByText(row.externalId, { exact: true })).toBeVisible();
+  await expect(
+    panel.getByRole("heading", { name: row.name, level: 2, exact: true }),
+  ).toBeVisible();
   await tabs.getByText("Технологический радар", { exact: true }).press("Enter");
   const radarPoint = page.locator(`.radar-point[data-scenario="${row.id}"]`);
   await expect(radarPoint).toHaveAttribute("aria-pressed", "true");
-  await expect(panel.getByText(row.externalId, { exact: true })).toBeVisible();
+  await expect(
+    panel.getByRole("heading", { name: row.name, level: 2, exact: true }),
+  ).toBeVisible();
   if (page.viewportSize()!.width >= 1366) {
     await expect(page.locator(".direction-label")).toHaveCount(8);
     await expect(page.locator("[data-inspector-fit]").first()).toBeVisible();
@@ -323,7 +327,7 @@ test("selection follows the scenario across views without displacing radar label
   const otherPoint = page.locator(`.radar-point[data-scenario="${other.id}"]`);
   await otherPoint.press("Enter");
   await expect(
-    panel.getByText(other.externalId, { exact: true }),
+    panel.getByRole("heading", { name: other.name, level: 2, exact: true }),
   ).toBeVisible();
   await expect(otherPoint).toHaveAttribute("aria-pressed", "true");
   await capture("radar-direct");
@@ -339,14 +343,14 @@ test("selection follows the scenario across views without displacing radar label
     page.locator(".radar-marker-layer [data-selection-halo]").first(),
   ).toBeAttached();
   await expect(
-    panel.getByText(other.externalId, { exact: true }),
+    panel.getByRole("heading", { name: other.name, level: 2, exact: true }),
   ).toBeVisible();
 
   await tabs.getByText("Каталог", { exact: true }).press("Enter");
   await expect(tabs.locator('[aria-current="page"]')).toHaveText("Каталог");
   await expect(page.locator(".catalog")).toHaveAttribute("aria-busy", "false");
   await expect(
-    panel.getByText(other.externalId, { exact: true }),
+    panel.getByRole("heading", { name: other.name, level: 2, exact: true }),
   ).toBeVisible();
   await tabs.getByText("Матрица зрелости", { exact: true }).press("Enter");
   await expect(tabs.locator('[aria-current="page"]')).toHaveText(
@@ -369,7 +373,7 @@ test("selection follows the scenario across views without displacing radar label
   );
   await expect(cell).toHaveAttribute("data-selected-scenario", "true");
   await expect(
-    panel.getByText(other.externalId, { exact: true }),
+    panel.getByRole("heading", { name: other.name, level: 2, exact: true }),
   ).toBeVisible();
   await page
     .locator(".matrix-switch")
