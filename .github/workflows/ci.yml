@@ -65,6 +65,9 @@ jobs:
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium
 
+      - name: Business landscape, tasks and coverage journeys
+        run: npx playwright test tests/browser/business.spec.ts --project=1440
+
       - name: Cube integration and URL context
         run: npx playwright test tests/browser/cube-integration.spec.ts --project=1440
 
