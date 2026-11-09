@@ -4,6 +4,7 @@ import { getDatabase, type Database } from "@/db/client";
 import * as s from "@/db/schema";
 import {
   createBusinessIndex,
+  functionalLandscape,
   type BusinessFacts,
 } from "@/features/business/model";
 export async function getBusinessData(
@@ -23,6 +24,7 @@ export async function getBusinessData(
         cases,
         scores,
         sources,
+        groups,
       ] = await Promise.all([
         tx.select().from(s.businessNodes),
         tx.select().from(s.taskClasses),
@@ -32,14 +34,22 @@ export async function getBusinessData(
             name: s.scenarios.name,
             description: s.scenarios.description,
             businessNodeId: s.scenarios.businessNodeId,
+            functionalGroupId: sql<
+              string | null
+            >`case when coalesce(${s.scenarioFunctionalGroups.conflict},false) or coalesce(${s.scenarioFunctionalGroups.unmapped},false) then null else ${s.scenarioFunctionalGroups.groupId} end`,
             implementation: s.scenarios.implementation,
             isSynthetic: s.scenarios.isSynthetic,
           })
-          .from(s.scenarios),
+          .from(s.scenarios)
+          .leftJoin(
+            s.scenarioFunctionalGroups,
+            eq(s.scenarioFunctionalGroups.scenarioId, s.scenarios.id),
+          ),
         tx
           .select({
             id: s.technologyDirections.id,
             name: s.technologyDirections.name,
+            description: s.technologyDirections.description,
           })
           .from(s.technologyDirections)
           .where(
@@ -104,12 +114,22 @@ export async function getBusinessData(
             ),
           ),
         tx.select({ id: s.sources.id, name: s.sources.name }).from(s.sources),
+        tx
+          .select({ id: s.functionalGroups.id, name: s.functionalGroups.name })
+          .from(s.functionalGroups)
+          .where(
+            eq(s.functionalGroups.description, "ctv-functional-groups-v1"),
+          ),
       ]);
+      const accepted = directions.filter(
+        (d) => d.description === "ctv-demo-classification-v2",
+      );
       const facts: BusinessFacts = {
+        groups,
         processes,
         tasks,
         scenarios,
-        directions,
+        directions: accepted.length ? accepted : directions,
         taskLinks,
         directionLinks,
         effects,
@@ -118,9 +138,10 @@ export async function getBusinessData(
         sources,
       };
       facts.processes.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+      facts.groups?.sort((a, b) => a.name.localeCompare(b.name, "ru"));
       facts.tasks.sort((a, b) => a.name.localeCompare(b.name, "ru"));
       facts.directions.sort((a, b) => a.name.localeCompare(b.name, "ru"));
-      return createBusinessIndex(facts);
+      return createBusinessIndex(functionalLandscape(facts));
     },
     { isolationLevel: "repeatable read", accessMode: "read only" },
   );

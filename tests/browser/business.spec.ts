@@ -26,14 +26,19 @@ for (const [width, height] of [
       .click();
     await expect(page).toHaveURL(/business\/landscape/);
     const structure = page.getByRole("complementary").filter({
-      has: page.getByRole("heading", { name: "Структура процессов" }),
+      has: page.getByRole("heading", {
+        name: "Функциональные группы и процессы",
+      }),
     });
     const branch = structure.locator("details").first();
     await branch.locator("summary").first().click();
     await expect(branch).not.toHaveAttribute("open", "");
     await branch.locator("summary").first().click();
     await expect(branch).toHaveAttribute("open", "");
-    await structure.getByRole("link").first().click();
+    await structure
+      .locator('a[data-business-scenarios]:not([data-business-scenarios="0"])')
+      .first()
+      .click();
     await expect(page).toHaveURL(/process=/);
     const process = new URL(page.url()).searchParams.get("process");
     expect(process).toBeTruthy();
@@ -57,6 +62,7 @@ for (const [width, height] of [
       .locator('[data-coverage-cell]:not([data-level="0"])')
       .first();
     await expect(cell).toBeVisible();
+    await expect(page.locator("tfoot")).toContainText("Уникальный итог");
     await cell.click();
     const composition = page.getByRole("region", { name: "Состав ячейки" });
     await expect(composition).toBeVisible();

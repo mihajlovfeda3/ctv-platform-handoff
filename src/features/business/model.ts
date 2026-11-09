@@ -1,3 +1,4 @@
+import { stableId } from "@/lib/identity";
 import { z } from "zod";
 export const businessQuery = z.object({
   process: z.uuid().optional(),
@@ -53,6 +54,9 @@ export type Process = Named & {
   description: string | null;
   kind: string;
   isSynthetic: boolean;
+  sourceProcessId?: string;
+  functionalGroupId?: string;
+  missingClassification?: boolean;
 };
 export type Task = Named & {
   businessNodeId: string | null;
@@ -61,6 +65,7 @@ export type Task = Named & {
   sourceId: string | null;
 };
 export type BusinessScenario = Named & {
+  functionalGroupId?: string | null;
   description: string;
   businessNodeId: string | null;
   implementation: string;
@@ -68,6 +73,9 @@ export type BusinessScenario = Named & {
 };
 export type Relation = { scenarioId: string; id: string };
 export type BusinessFacts = {
+  groups?: Named[];
+  scopes?: Record<string, string[]>;
+  taskScopes?: Record<string, string[]>;
   processes: Process[];
   tasks: Task[];
   scenarios: BusinessScenario[];
@@ -84,6 +92,94 @@ export type BusinessFacts = {
   scores: { scenarioId: string; metric: string; value: number | null }[];
   sources: Named[];
 };
+// Presentation hierarchy only: never writes or invents scenario/task relationships.
+export function functionalLandscape(facts: BusinessFacts): BusinessFacts {
+  if (!facts.groups) return facts;
+  const missing = stableId("business-view:missing-functional-group");
+  const processes: Process[] = facts.groups.map((g) => ({
+    ...g,
+    parentId: null,
+    description: null,
+    kind: "function",
+    isSynthetic: false,
+    functionalGroupId: g.id,
+  }));
+  const scopes: Record<string, string[]> = {};
+  const taskScopes: Record<string, string[]> = {};
+  const ensureMissing = () => {
+    if (!processes.some((p) => p.id === missing))
+      processes.push({
+        id: missing,
+        name: "Функциональная группа не определена",
+        parentId: null,
+        description: null,
+        kind: "function",
+        isSynthetic: false,
+        missingClassification: true,
+      });
+  };
+  const add = (
+    groupId: string,
+    processId: string | null,
+    scenarioId?: string,
+    taskId?: string,
+  ) => {
+    let group = processes.find((p) => p.id === groupId);
+    if (!group) {
+      ensureMissing();
+      group = processes.find((p) => p.id === missing)!;
+    }
+    const original = facts.processes.find((p) => p.id === processId);
+    const leafId = stableId(
+      `business-view:${group.id}:${original?.id ?? "unassigned-process"}`,
+    );
+    if (!processes.some((p) => p.id === leafId))
+      processes.push({
+        id: leafId,
+        name: original?.name ?? "Бизнес-процесс не указан",
+        parentId: group.id,
+        description: original?.description ?? null,
+        kind: "process",
+        isSynthetic: original?.isSynthetic ?? false,
+        sourceProcessId: original?.id,
+        functionalGroupId: group.functionalGroupId,
+        missingClassification: group.missingClassification,
+      });
+    for (const key of [group.id, leafId]) {
+      scopes[key] ??= [];
+      taskScopes[key] ??= [];
+      if (scenarioId && !scopes[key].includes(scenarioId))
+        scopes[key].push(scenarioId);
+      if (taskId && !taskScopes[key].includes(taskId))
+        taskScopes[key].push(taskId);
+    }
+  };
+  for (const scenario of facts.scenarios) {
+    const tasks = facts.taskLinks.filter((l) => l.scenarioId === scenario.id);
+    add(
+      scenario.functionalGroupId ?? missing,
+      scenario.businessNodeId,
+      scenario.id,
+    );
+    for (const link of tasks)
+      add(
+        scenario.functionalGroupId ?? missing,
+        scenario.businessNodeId,
+        scenario.id,
+        link.id,
+      );
+  }
+  for (const task of facts.tasks)
+    if (!facts.taskLinks.some((l) => l.id === task.id)) {
+      ensureMissing();
+      add(missing, task.businessNodeId, undefined, task.id);
+    }
+  for (const p of processes) {
+    scopes[p.id] ??= [];
+    taskScopes[p.id] ??= [];
+  }
+  return { ...facts, processes, scopes, taskScopes };
+}
 export function createBusinessIndex(facts: BusinessFacts) {
   const scenarioById = new Map(facts.scenarios.map((s) => [s.id, s]));
   const taskScenarios = new Map<string, Set<string>>();
@@ -125,56 +221,85 @@ export function createBusinessIndex(facts: BusinessFacts) {
     [...new Set(ids)].flatMap((id) =>
       scenarioById.has(id) ? [scenarioById.get(id)!] : [],
     );
-  const forTask = (id: string, direction?: string) =>
+  const forTask = (id: string, direction?: string, process?: string) =>
     uniqueScenarios(taskScenarios.get(id) ?? []).filter(
-      (s) => !direction || scenarioDirections.get(s.id)?.has(direction),
+      (s) =>
+        (!direction || scenarioDirections.get(s.id)?.has(direction)) &&
+        (!process || !facts.scopes || facts.scopes[process]?.includes(s.id)),
     );
-  const hasImplementation = (id: string, direction?: string) =>
-    forTask(id, direction).some((s) => s.implementation === "yes");
+  const hasImplementation = (
+    id: string,
+    direction?: string,
+    process?: string,
+  ) => forTask(id, direction, process).some((s) => s.implementation === "yes");
   const matchingTasks = (q: Partial<BusinessQuery>) => {
     const nodes = q.process ? descendants(q.process) : null;
     return facts.tasks.filter(
       (t) =>
         (!nodes ||
-          (t.businessNodeId !== null && nodes.has(t.businessNodeId))) &&
+          (facts.taskScopes
+            ? facts.taskScopes[q.process!]?.includes(t.id)
+            : t.businessNodeId !== null && nodes.has(t.businessNodeId))) &&
         (!q.q ||
           `${t.name} ${t.description ?? ""}`
             .toLocaleLowerCase("ru")
             .includes(q.q.toLocaleLowerCase("ru"))) &&
-        (!q.direction || forTask(t.id, q.direction).length > 0) &&
-        (q.implementation !== "yes" || hasImplementation(t.id, q.direction)) &&
-        (q.implementation !== "no" || !hasImplementation(t.id, q.direction)),
+        (!q.direction || forTask(t.id, q.direction, q.process).length > 0) &&
+        (q.implementation !== "yes" ||
+          hasImplementation(t.id, q.direction, q.process)) &&
+        (q.implementation !== "no" ||
+          !hasImplementation(t.id, q.direction, q.process)),
     );
   };
   const summary = (
     process?: string,
     direction?: string,
     taskIds?: Set<string>,
+    implementation: BusinessQuery["implementation"] = "all",
   ) => {
     const nodes = process ? descendants(process) : null;
+    const scope = facts.scopes
+      ? new Set(
+          process
+            ? (facts.scopes[process] ?? [])
+            : facts.scenarios.map((s) => s.id),
+        )
+      : null;
     const tasks = facts.tasks.filter(
       (t) =>
         (!nodes ||
-          (t.businessNodeId !== null && nodes.has(t.businessNodeId))) &&
+          (facts.taskScopes
+            ? facts.taskScopes[process!]?.includes(t.id)
+            : t.businessNodeId !== null && nodes.has(t.businessNodeId))) &&
         (!taskIds || taskIds.has(t.id)),
     );
     const related = uniqueScenarios(
       tasks.flatMap((t) => [...(taskScenarios.get(t.id) ?? [])]),
     );
-    // Direct process scenarios remain visible even when no task link has been recorded.
     const direct = taskIds
       ? []
-      : facts.scenarios.filter(
-          (s) =>
-            !nodes ||
-            (s.businessNodeId !== null && nodes.has(s.businessNodeId)),
+      : facts.scenarios.filter((s) =>
+          scope
+            ? scope.has(s.id)
+            : !nodes ||
+              (s.businessNodeId !== null && nodes.has(s.businessNodeId)),
         );
     const scenarios = uniqueScenarios(
       [...related, ...direct].map((s) => s.id),
-    ).filter((s) => !direction || scenarioDirections.get(s.id)?.has(direction));
-    const covered = tasks.filter((t) => forTask(t.id, direction).length > 0);
+    ).filter(
+      (s) =>
+        (!scope || scope.has(s.id)) &&
+        (!direction || scenarioDirections.get(s.id)?.has(direction)) &&
+        (implementation === "all" || s.implementation === implementation),
+    );
+    const ids = new Set(scenarios.map((s) => s.id));
+    const covered = tasks.filter((t) =>
+      forTask(t.id, direction).some((s) => ids.has(s.id)),
+    );
     const implementedTasks = tasks.filter((t) =>
-      hasImplementation(t.id, direction),
+      forTask(t.id, direction).some(
+        (s) => ids.has(s.id) && s.implementation === "yes",
+      ),
     );
     return {
       tasks,
@@ -185,10 +310,10 @@ export function createBusinessIndex(facts: BusinessFacts) {
       share: tasks.length ? implementedTasks.length / tasks.length : null,
     };
   };
-  const status = (id: string, direction?: string) =>
-    hasImplementation(id, direction)
+  const status = (id: string, direction?: string, process?: string) =>
+    hasImplementation(id, direction, process)
       ? "Есть реализация"
-      : forTask(id, direction).length
+      : forTask(id, direction, process).length
         ? "Потенциал"
         : "Нет данных";
   const effectsFor = (scenarios: BusinessScenario[]) => {
@@ -220,5 +345,9 @@ export function createBusinessIndex(facts: BusinessFacts) {
     status,
     effectsFor,
     casesFor,
+    taskContexts: (id: string) =>
+      facts.processes.filter(
+        (p) => p.parentId && facts.taskScopes?.[p.id]?.includes(id),
+      ),
   };
 }

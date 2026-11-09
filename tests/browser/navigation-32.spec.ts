@@ -133,3 +133,23 @@ test("compact rail, temporary overlay, disabled help and ordinary links", async 
     .click();
   await expect(page).toHaveURL(/overview/);
 });
+
+test("scenario breadcrumbs show the active view", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/scenarios/catalog");
+  for (const title of [
+    "Каталог",
+    "Технологический радар",
+    "Матрица зрелости",
+    "3D-куб",
+  ]) {
+    await page
+      .getByRole("navigation", { name: "Представления сценариев" })
+      .getByRole("link", { name: title, exact: true })
+      .click();
+    await expect(page.locator(".breadcrumb strong")).toHaveText(["Сценарии", title]);
+    await expect(page.locator(".breadcrumb")).toContainText("Рабочее пространство");
+  }
+  expect(errors).toEqual([]);
+});

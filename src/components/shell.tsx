@@ -98,6 +98,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   };
 
   const active = navigation.find((item) => pathname.startsWith(item.href));
+  const currentViewTitle = Object.entries(views).find(
+    ([view]) => pathname === `/scenarios/${view}`,
+  )?.[1];
   return (
     <div
       className={`app-shell ${collapsed ? "nav-collapsed" : ""} ${peek && collapsed ? "nav-peek" : ""} ${pathname === "/overview" ? "overview-shell" : ""} ${pathname === "/scenarios/catalog" ? "catalog-shell" : pathname === "/scenarios/radar" ? "radar-shell" : pathname === "/scenarios/maturity" ? "matrix-shell" : ""}`}
@@ -143,10 +146,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <div className="breadcrumb">
               Рабочее пространство <span>/</span>{" "}
               <strong>{active?.label ?? "Сценарии"}</strong>
-              {pathname === "/scenarios/cube" && (
+              {currentViewTitle && (
                 <>
                   <span>/</span>
-                  <strong>3D-куб</strong>
+                  <strong>{currentViewTitle}</strong>
                 </>
               )}
             </div>

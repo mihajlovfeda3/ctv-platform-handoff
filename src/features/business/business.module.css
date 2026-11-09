@@ -116,7 +116,7 @@
 }
 .landscape {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr);
   gap: 18px;
   align-items: start;
 }
@@ -620,4 +620,48 @@
   max-height: max(340px, calc(100dvh - 380px));
   overflow: auto;
   padding-right: 6px;
+}
+
+.total {
+  font-weight: 600;
+  color: #1e4c75;
+  text-align: center;
+  background: #f3f7fb;
+  padding: 12px;
+  min-width: 110px;
+}
+.total small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.heatmap a[data-missing] {
+  border-style: dashed;
+  border-color: #9ba8b6;
+}
+.landscape .stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.landscape .stats strong {
+  font-size: 19px;
+}
+.landscape .stats > div {
+  padding: 8px;
+}
+.tree a small {
+  display: block;
+  font-size: 10px;
+  color: #637e96;
+  font-weight: 400;
+}
+.table td:nth-child(2) > div {
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+@media (max-width: 1100px) {
+  .landscape .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

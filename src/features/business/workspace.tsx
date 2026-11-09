@@ -22,12 +22,14 @@ function Badge({
   index,
   task,
   direction,
+  process,
 }: {
   index: Index;
   task: Task;
   direction?: string;
+  process?: string;
 }) {
-  const status = index.status(task.id, direction);
+  const status = index.status(task.id, direction, process);
   return (
     <span className={styles.badge} data-state={status}>
       {status}
@@ -45,11 +47,16 @@ function Criteria() {
         задач, а не дополнительные статусы сценария.
       </p>
       <p>
-        Доля — классы задач с реализацией / все известные классы в выбранном
-        процессе, включая дочерние. Это характеристика имеющихся связей, а не
-        официальная оценка цифровизации компании. В ячейке учитывается только
-        выбранное технологическое направление. Уникальные ID исключают двойной
-        подсчёт.
+        Доля классов задач с реализуемыми сценариями — такие классы / все
+        известные классы в выбранной функции или процессе. Это характеристика
+        имеющихся связей, а не доля решённых задач или официальная оценка
+        цифровизации компании. В ячейке учитывается только выбранное
+        технологическое направление. Уникальные ID исключают двойной подсчёт.
+      </p>
+      <p>
+        Недостаточно данных для сравнительной оценки зон роста и успеха:
+        отраслевой уровень решения задач не задан. Внутренние статусы и внешние
+        кейсы не заменяют такую оценку.
       </p>
     </details>
   );
@@ -74,7 +81,8 @@ function Stats({ index, process }: { index: Index; process?: string }) {
           {d.share === null ? "—" : `${Math.round(d.share * 100)}%`}
         </strong>
         <span>
-          Задач с реализацией · {d.implementedTasks.length} / {d.tasks.length}
+          Доля классов задач с реализуемыми сценариями ·{" "}
+          {d.implementedTasks.length} / {d.tasks.length}
         </span>
       </div>
     </div>
@@ -108,9 +116,9 @@ function Filters({
         </label>
       )}
       <label>
-        Бизнес-процесс
+        ФГ / бизнес-процесс
         <select name="process" defaultValue={q.process ?? ""}>
-          <option value="">Все процессы</option>
+          <option value="">Все функциональные группы и процессы</option>
           {index.facts.processes.map((p) => (
             <option key={p.id} value={p.id}>
               {"— ".repeat(Math.max(0, index.ancestors(p.id).length - 1))}
@@ -131,11 +139,19 @@ function Filters({
         </select>
       </label>
       <label>
-        Реализация у задач
+        {view === "coverage" ? "Реализация сценариев" : "Реализация у задач"}
         <select name="implementation" defaultValue={q.implementation}>
-          <option value="all">Все классы задач</option>
-          <option value="yes">Есть реализация</option>
-          <option value="no">Без подтверждённой реализации</option>
+          <option value="all">
+            {view === "coverage" ? "Все сценарии" : "Все классы задач"}
+          </option>
+          <option value="yes">
+            {view === "coverage" ? "Реализуется" : "Есть реализация"}
+          </option>
+          <option value="no">
+            {view === "coverage"
+              ? "Не реализуется"
+              : "Без подтверждённой реализации"}
+          </option>
         </select>
       </label>
       {view === "tasks" && (
@@ -169,9 +185,18 @@ function TaskLinks({
       {tasks.map((t) => (
         <li key={t.id}>
           <Link href={taskHref(t.id, view, q)}>{t.name}</Link>
-          <Badge index={index} task={t} direction={direction ?? q.direction} />
+          <Badge
+            index={index}
+            task={t}
+            direction={direction ?? q.direction}
+            process={q.cell ?? q.process}
+          />
           <span>
-            {index.forTask(t.id, direction ?? q.direction).length} сценариев
+            {
+              index.forTask(t.id, direction ?? q.direction, q.cell ?? q.process)
+                .length
+            }{" "}
+            сценариев
           </span>
         </li>
       ))}
@@ -300,10 +325,15 @@ function Landscape({ index, q }: { index: Index; q: BusinessQuery }) {
           );
           const link = (
             <Link
+              data-business-scenarios={index.summary(p.id).scenarios.length}
               aria-current={q.process === p.id ? "page" : undefined}
               href={businessHref("landscape", q, { process: p.id })}
             >
               {p.name}
+              <small>
+                {index.summary(p.id).tasks.length} классов ·{" "}
+                {index.summary(p.id).scenarios.length} сценариев
+              </small>
             </Link>
           );
           return (
@@ -313,10 +343,7 @@ function Landscape({ index, q }: { index: Index; q: BusinessQuery }) {
                   <summary>
                     <span>{p.name}</span>
                   </summary>
-                  <div className={styles.selectProcess}>
-                    {link}
-                    <small>Выбрать процесс</small>
-                  </div>
+                  <div className={styles.selectProcess}>{link}</div>
                   {tree(children, seen, depth + 1)}
                 </details>
               ) : (
@@ -344,26 +371,21 @@ function Landscape({ index, q }: { index: Index; q: BusinessQuery }) {
   return (
     <div className={styles.landscape}>
       <aside className={styles.panel}>
-        <h2>Структура процессов</h2>
+        <h2>Функциональные группы и процессы</h2>
         {roots.length ? (
           tree(roots, new Set())
         ) : (
           <p>Бизнес-процессы не загружены.</p>
         )}
         <p className={styles.note}>
-          Процессы не являются организационными блоками или функциональными
-          группами.
+          Функциональные группы взяты из бизнес-контекста сценариев. Конкретные
+          процессы — следующий уровень; организационные блоки сюда не входят.
         </p>
       </aside>
       <section className={styles.panel}>
         <Breadcrumbs index={index} q={q} view="landscape" />
-        <h2>{selected?.name ?? "Все бизнес-процессы"}</h2>
-        <p>
-          {selected
-            ? selected.description ||
-              "Описание процесса в справочнике пока не заполнено."
-            : "Выберите процесс в структуре. Сводка учитывает связанные классы задач и все дочерние уровни."}
-        </p>
+        <h2>{selected?.name ?? "Все функциональные группы"}</h2>
+        {selected?.description && <p>{selected.description}</p>}
         <p className={styles.note}>
           Сводка процесса по всем известным классам задач, до применения
           фильтров.
@@ -371,7 +393,7 @@ function Landscape({ index, q }: { index: Index; q: BusinessQuery }) {
         <Stats index={index} process={q.process} />
         {children.length > 0 && (
           <>
-            <h3>Дочерние процессы</h3>
+            <h3>Функции и процессы</h3>
             <div className={styles.children}>
               {children.map((p) => (
                 <Link
@@ -388,14 +410,15 @@ function Landscape({ index, q }: { index: Index; q: BusinessQuery }) {
         <div className={styles.actions}>
           <Link href={businessHref("tasks", q)}>Открыть классы задач</Link>
           <Link href={businessHref("coverage", q)}>Матрица покрытия →</Link>
-          {q.process && (
+          {(selected?.sourceProcessId || selected?.functionalGroupId) && (
             <Link
               href={workspaceHref("catalog", {
-                businessNodeId: q.process,
+                businessNodeId: selected?.sourceProcessId,
+                functionalGroupId: selected?.functionalGroupId,
                 context: q.context,
               })}
             >
-              В каталоге по процессу ↗
+              Связанные сценарии в каталоге ↗
             </Link>
           )}
         </div>
@@ -422,17 +445,17 @@ function Tasks({ index, q }: { index: Index; q: BusinessQuery }) {
       q.sort === "name"
         ? a.name
         : q.sort === "scenarios"
-          ? index.forTask(a.id, q.direction).length
+          ? index.forTask(a.id, q.direction, q.process).length
           : index
-              .forTask(a.id, q.direction)
+              .forTask(a.id, q.direction, q.process)
               .filter((s) => s.implementation === "yes").length;
     const bv =
       q.sort === "name"
         ? b.name
         : q.sort === "scenarios"
-          ? index.forTask(b.id, q.direction).length
+          ? index.forTask(b.id, q.direction, q.process).length
           : index
-              .forTask(b.id, q.direction)
+              .forTask(b.id, q.direction, q.process)
               .filter((s) => s.implementation === "yes").length;
     const comparison =
       typeof av === "string"
@@ -478,7 +501,7 @@ function Tasks({ index, q }: { index: Index; q: BusinessQuery }) {
               >
                 {sort("name", "Класс задачи")}
               </th>
-              <th>Бизнес-процесс</th>
+              <th>Функциональная группа / процесс</th>
               <th>{sort("scenarios", "Сценарии")}</th>
               <th>{sort("implemented", "Реализуется")}</th>
               <th>Покрытие</th>
@@ -487,7 +510,7 @@ function Tasks({ index, q }: { index: Index; q: BusinessQuery }) {
           </thead>
           <tbody>
             {tasks.map((t) => {
-              const rows = index.forTask(t.id, q.direction);
+              const rows = index.forTask(t.id, q.direction, q.process);
               return (
                 <tr key={t.id}>
                   <td>
@@ -497,16 +520,28 @@ function Tasks({ index, q }: { index: Index; q: BusinessQuery }) {
                     )}
                   </td>
                   <td>
-                    {index.facts.processes.find(
-                      (p) => p.id === t.businessNodeId,
-                    )?.name ?? "Процесс не указан"}
+                    {index.taskContexts(t.id).map((p) => (
+                      <div key={p.id}>
+                        {index
+                          .ancestors(p.id)
+                          .map((node) => node.name)
+                          .join(" → ")}
+                      </div>
+                    ))}
+                    {!index.taskContexts(t.id).length &&
+                      "Функциональная группа не определена"}
                   </td>
                   <td>{rows.length}</td>
                   <td>
                     {rows.filter((s) => s.implementation === "yes").length}
                   </td>
                   <td>
-                    <Badge index={index} task={t} direction={q.direction} />
+                    <Badge
+                      index={index}
+                      task={t}
+                      direction={q.direction}
+                      process={q.process}
+                    />
                   </td>
                   <td>
                     {index
@@ -542,56 +577,56 @@ function Coverage({ index, q }: { index: Index; q: BusinessQuery }) {
   const directions = index.facts.directions.filter(
     (d) => !q.direction || d.id === q.direction,
   );
-  const filtered =
-    q.q || q.implementation !== "all"
-      ? new Set(
-          index.matchingTasks({ ...q, process: undefined }).map((t) => t.id),
-        )
-      : undefined;
-  const cells = rows.map((p) =>
-    directions.map((d) => index.summary(p.id, d.id, filtered)),
-  );
+  const filtered = q.q
+    ? new Set(index.matchingTasks({ q: q.q }).map((t) => t.id))
+    : undefined;
+  const summarize = (process?: string, direction = q.direction) =>
+    index.summary(process, direction, filtered, q.implementation);
+  const cells = rows.map((p) => directions.map((d) => summarize(p.id, d.id)));
   const max = Math.max(1, ...cells.flat().map((c) => c.scenarios.length));
+  const totals = directions.map((d) => summarize(q.process, d.id));
+  const grand = summarize(q.process);
   const cellProcess = rows.find((p) => p.id === q.cell);
   const cellDirection = directions.find((d) => d.id === q.cellDirection);
   const detail =
     cellProcess && cellDirection
-      ? index.summary(cellProcess.id, cellDirection.id, filtered)
+      ? summarize(cellProcess.id, cellDirection.id)
       : null;
   return (
     <>
       <section className={styles.panel}>
         <Breadcrumbs index={index} q={q} view="coverage" />
         <div className={styles.sectionHeading}>
-          <h2>Покрытие процессов технологиями</h2>
+          <h2>Функции × технологические направления</h2>
           <span>
-            {rows.length} процессов · {directions.length} направлений
+            {rows.length} функций / процессов · {directions.length} направлений
           </span>
         </div>
         <p className={styles.note}>
-          Строки включают дочерние уровни. Насыщенность — число уникальных
-          связанных сценариев, шкала относительно текущей таблицы. Число в
-          ячейке — сценарии; раскрытие показывает состав.
+          Строки — ФГ или их процессы. Насыщенность — число уникальных связанных
+          сценариев, шкала относительно текущей таблицы. Число в ячейке —
+          сценарии; раскрытие показывает состав.
         </p>
         <div className={styles.legend}>
           <span>
-            <i /> Нет данных
+            <i /> 0 — нет сценариев
           </span>
           <span>
-            <i data-level="1" /> Меньше сценариев
+            <i data-level="1" /> Низкая интенсивность: до ⅓ максимума
           </span>
           <span>
-            <i data-level="3" /> Больше сценариев
+            <i data-level="3" /> Высокая: свыше ⅔; максимум {max} сценариев
           </span>
         </div>
         <div className={styles.heatScroll}>
           <table className={styles.heatmap}>
             <thead>
               <tr>
-                <th>Бизнес-процесс / направление</th>
+                <th>Функция / направление</th>
                 {directions.map((d) => (
                   <th key={d.id}>{d.name}</th>
                 ))}
+                <th>Уникальный итог</th>
               </tr>
             </thead>
             <tbody>
@@ -614,6 +649,7 @@ function Coverage({ index, q }: { index: Index; q: BusinessQuery }) {
                       <td key={d.id}>
                         <Link
                           data-coverage-cell
+                          data-missing={p.missingClassification || undefined}
                           data-level={level}
                           aria-current={
                             q.cell === p.id && q.cellDirection === d.id
@@ -626,17 +662,48 @@ function Coverage({ index, q }: { index: Index; q: BusinessQuery }) {
                             cellDirection: d.id,
                           })}
                         >
-                          <strong>{c.scenarios.length || "—"}</strong>
+                          <strong>
+                            {c.scenarios.length ||
+                              (p.missingClassification ? "?" : "0")}
+                          </strong>
                           <span>{c.implemented.length} реализуется</span>
                         </Link>
                       </td>
                     );
                   })}
+                  <td className={styles.total}>
+                    {summarize(p.id).scenarios.length}
+                    <small>
+                      {summarize(p.id).implemented.length} реализуется
+                    </small>
+                  </td>
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr>
+                <th>Уникальный итог</th>
+                {totals.map((t, i) => (
+                  <td className={styles.total} key={directions[i].id}>
+                    {t.scenarios.length}
+                    <small>{t.implemented.length} реализуется</small>
+                  </td>
+                ))}
+                <td className={styles.total}>
+                  {grand.scenarios.length}
+                  <small>{grand.implemented.length} реализуется</small>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
+        <p className={styles.note}>
+          Итоги считают уникальные сценарии, а не сумму пересекающихся ячеек.
+          Сценарии без технологической классификации входят в итог, но не в
+          столбцы направлений. «?» и пунктир обозначают неизвестную
+          функциональную классификацию; «0» в остальных строках — отсутствие
+          сценариев.
+        </p>
         {!rows.length && (
           <p className={styles.empty}>
             Бизнес-процессы отсутствуют. Покрытие пока нельзя рассчитать.
@@ -736,12 +803,23 @@ export async function BusinessWorkspace({
       </nav>
       <Filters key={JSON.stringify(q)} view={view} q={q} index={index} />
       <p className={styles.note}>
-        В справочнике {index.facts.processes.length} процессов и{" "}
-        {index.facts.tasks.length} классов задач; синтетических:{" "}
-        {index.facts.processes.filter((p) => p.isSynthetic).length} и{" "}
-        {index.facts.tasks.filter((t) => t.isSynthetic).length}. Показаны
-        существующие связи, без достроения отсутствующих данных.
+        {
+          index.facts.processes.filter(
+            (p) => p.functionalGroupId && !p.parentId,
+          ).length
+        }{" "}
+        функциональных групп · {index.facts.tasks.length} классов задач, из них{" "}
+        {index.facts.tasks.filter((t) => t.isSynthetic).length} синтетических.
+        Показаны существующие связи, без достроения отсутствующих данных.
       </p>
+      <details className={styles.criteria}>
+        <summary>Ограничения демонстрационных данных</summary>
+        <p>
+          Связи демонстрационных классов созданы из повторяющихся профилей
+          генератора и не подтверждают корпоративную классификацию. Они
+          сохранены без перераспределения; новые связи не добавлялись.
+        </p>
+      </details>
       <Criteria />
       {view === "landscape" ? (
         <Landscape index={index} q={q} />
@@ -795,10 +873,7 @@ export async function TaskCard({
       <header className={styles.taskHero}>
         <span className={styles.eyebrow}>Класс задачи</span>
         <h1>{task.name}</h1>
-        <p>
-          {task.description ||
-            "Описание и контекст применения в справочнике пока не указаны."}
-        </p>
+        {task.description?.trim() && <p>{task.description}</p>}
         <Badge index={index} task={task} />
         <div className={styles.summary}>
           <span>{scenarios.length} сценариев</span>
@@ -809,30 +884,41 @@ export async function TaskCard({
         </div>
       </header>
       <section className={styles.panel}>
-        <h2>Бизнес-процесс</h2>
-        {task.businessNodeId ? (
-          <Breadcrumbs
-            index={index}
-            q={{ ...q, process: task.businessNodeId }}
-            view="landscape"
-          />
+        <h2>Бизнес-контекст</h2>
+        {index.taskContexts(task.id).length ? (
+          index
+            .taskContexts(task.id)
+            .map((p) => (
+              <Breadcrumbs
+                key={p.id}
+                index={index}
+                q={{ ...q, process: p.id }}
+                view="landscape"
+              />
+            ))
         ) : (
-          <p>
-            Процесс не сопоставлен. Классификация не выводится из
-            организационных блоков.
-          </p>
+          <p>Функциональная группа не определена.</p>
         )}
       </section>
       <section className={styles.panel}>
         <h2>Связанные сценарии</h2>
-        <p className={styles.note}>
-          Текущие оценки в контексте «{q.context}». Пропущенные значения
-          обозначены «—».
-        </p>
         <ScenarioList index={index} rows={scenarios} context={q.context} />
       </section>
       <section className={styles.panel}>
-        <h2>Типы эффектов</h2>
+        <h2>Технологические направления и эффекты</h2>
+        <ul className={styles.chips}>
+          {index.facts.directions
+            .filter((d) =>
+              index.facts.directionLinks.some(
+                (l) =>
+                  l.id === d.id && scenarios.some((s) => s.id === l.scenarioId),
+              ),
+            )
+            .map((d) => (
+              <li key={d.id}>{d.name}</li>
+            ))}
+        </ul>
+        <h3>Типы эффектов</h3>
         {effects.length ? (
           <ul className={styles.chips}>
             {effects.map((e) => (
@@ -845,6 +931,10 @@ export async function TaskCard({
       </section>
       <section className={styles.panel}>
         <h2>Кейсы бенчмаркинга</h2>
+        <p className={styles.note}>
+          Внешние кейсы не подтверждают реализацию внутри компании. Недостаточно
+          данных для сравнительной оценки зон роста и успеха.
+        </p>
         {cases.length ? (
           <ul className={styles.cases}>
             {cases.map((c) => (
@@ -869,6 +959,8 @@ export async function TaskCard({
       <details className={`${styles.panel} ${styles.disclosure}`}>
         <summary>Техническая информация и происхождение</summary>
         <dl className={styles.metadata}>
+          <dt>Контекст оценок</dt>
+          <dd>{q.context}</dd>
           <dt>ID класса</dt>
           <dd>{task.id}</dd>
           <dt>Происхождение</dt>

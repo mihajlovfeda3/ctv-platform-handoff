@@ -7,6 +7,7 @@ import type { Database } from "../src/db/client";
 import { getBusinessData } from "../src/server/business";
 import {
   createBusinessIndex,
+  functionalLandscape,
   businessQuery,
   businessHref,
   taskHref,
@@ -106,6 +107,83 @@ function fixture(): BusinessFacts {
   };
 }
 describe("Business aggregation", () => {
+  it("projects actual functional groups without moving scenarios or inventing task links", () => {
+    const f = fixture();
+    f.groups = [
+      { id: id("safety"), name: "Производственная безопасность" },
+      { id: id("logistics"), name: "Логистика" },
+      { id: id("energy"), name: "Энергетика" },
+    ];
+    f.scenarios[0].functionalGroupId = id("safety");
+    f.scenarios[1].functionalGroupId = id("logistics");
+    // The same task can have actual links to scenarios in different functions.
+    f.taskLinks.push({ id: id("one"), scenarioId: id("no") });
+    const before = structuredClone(f);
+    const x = createBusinessIndex(functionalLandscape(f));
+    expect(f).toEqual(before);
+    expect(x.facts.tasks).toEqual(f.tasks);
+    expect(x.facts.scenarios).toEqual(f.scenarios);
+    expect(x.facts.taskLinks).toEqual(f.taskLinks);
+    expect(x.summary(id("safety")).scenarios.map((s) => s.id)).toEqual([
+      id("yes"),
+    ]);
+    expect(x.summary(id("logistics")).scenarios.map((s) => s.id)).toEqual([
+      id("no"),
+    ]);
+    expect(x.status(id("one"), undefined, id("logistics"))).toBe("Потенциал");
+    expect(
+      x.matchingTasks({ process: id("logistics"), implementation: "yes" }),
+    ).toHaveLength(0);
+    expect(x.taskContexts(id("one"))).toHaveLength(2);
+    const leaf = x
+      .taskContexts(id("one"))
+      .find((p) => p.parentId === id("safety"))!;
+    expect(x.ancestors(leaf.id).map((p) => p.name)).toEqual([
+      "Производственная безопасность",
+      "Подпроцесс",
+    ]);
+    expect(x.summary(leaf.id).scenarios).toHaveLength(1);
+    expect(x.summary(id("energy")).scenarios).toHaveLength(0);
+    const missing = x.facts.processes.find(
+      (p) => p.missingClassification && !p.parentId,
+    )!;
+    expect(x.summary(missing.id).tasks.map((t) => t.id)).toEqual([id("none")]);
+    expect(x.summary(missing.id).scenarios).toHaveLength(0);
+  });
+  it("counts intersecting technology cells once in totals and retains unclassified scenarios", () => {
+    const f = fixture();
+    f.groups = [{ id: id("safety"), name: "Производственная безопасность" }];
+    f.scenarios[0].functionalGroupId = id("safety");
+    f.scenarios[1].functionalGroupId = null;
+    f.directions.push({ id: id("tech2"), name: "Другое направление" });
+    f.directionLinks.push({ id: id("tech2"), scenarioId: id("yes") });
+    const x = createBusinessIndex(functionalLandscape(f));
+    expect(x.summary(id("safety"), id("tech")).scenarios).toHaveLength(1);
+    expect(x.summary(id("safety"), id("tech2")).scenarios).toHaveLength(1);
+    expect(x.summary(id("safety")).scenarios).toHaveLength(1);
+    expect(x.summary(undefined, id("tech")).scenarios).toHaveLength(2);
+    expect(x.summary().scenarios).toHaveLength(2);
+    expect(
+      x
+        .summary(undefined, undefined, undefined, "yes")
+        .scenarios.map((s) => s.id),
+    ).toEqual([id("yes")]);
+    expect(
+      x.summary(id("safety"), id("tech"), undefined, "no").scenarios,
+    ).toHaveLength(0);
+    const missing = x.facts.processes.find(
+      (p) => p.missingClassification && !p.parentId,
+    )!;
+    expect(x.summary(missing.id).scenarios.map((s) => s.id)).toEqual([
+      id("no"),
+    ]);
+    f.directionLinks = [];
+    const noTechnology = createBusinessIndex(functionalLandscape(f));
+    expect(
+      noTechnology.summary(id("safety"), id("tech")).scenarios,
+    ).toHaveLength(0);
+    expect(noTechnology.summary(id("safety")).scenarios).toHaveLength(1);
+  });
   it("counts distinct scenarios and tasks across descendants and multiple technology links", () => {
     const x = createBusinessIndex(fixture());
     const cell = x.summary(id("root"), id("tech"));
@@ -206,37 +284,40 @@ describe("Business read service on isolated in-memory PostgreSQL", () => {
       .insert(s.businessNodes)
       .values(f.processes.filter((p) => p.parentId !== null));
     await db.insert(s.taskClasses).values(f.tasks);
-    await db
-      .insert(s.scenarios)
-      .values(
-        f.scenarios.map((row, i) => ({
-          ...row,
-          implementation: row.implementation as "yes" | "no",
-          externalId: `TEST-${i}`,
-          originNamespace: "business-test",
-        })),
-      );
+    await db.insert(s.functionalGroups).values([
+      {
+        id: id("safety"),
+        name: "Производственная безопасность",
+        description: "ctv-functional-groups-v1",
+      },
+      { id: id("unmapped"), name: "Неподтверждённое значение" },
+    ]);
+    await db.insert(s.scenarios).values(
+      f.scenarios.map((row, i) => ({
+        ...row,
+        functionalGroupId: i === 0 ? id("safety") : id("unmapped"),
+        implementation: row.implementation as "yes" | "no",
+        externalId: `TEST-${i}`,
+        originNamespace: "business-test",
+      })),
+    );
     await db.insert(s.technologyDirections).values(f.directions);
     await db
       .insert(s.keyTechnologies)
       .values({ id: id("key"), name: "Технология", directionId: id("tech") });
-    await db
-      .insert(s.technologyMethods)
-      .values(
-        [1, 2].map((n) => ({
-          id: id(`method${n}`),
-          name: `Метод ${n}`,
-          technologyId: id("key"),
-        })),
-      );
-    await db
-      .insert(s.scenarioTechnologies)
-      .values(
-        [1, 2].map((n) => ({
-          scenarioId: id("yes"),
-          methodId: id(`method${n}`),
-        })),
-      );
+    await db.insert(s.technologyMethods).values(
+      [1, 2].map((n) => ({
+        id: id(`method${n}`),
+        name: `Метод ${n}`,
+        technologyId: id("key"),
+      })),
+    );
+    await db.insert(s.scenarioTechnologies).values(
+      [1, 2].map((n) => ({
+        scenarioId: id("yes"),
+        methodId: id(`method${n}`),
+      })),
+    );
     await db.insert(s.scenarioTasks).values([
       { taskId: id("one"), scenarioId: id("yes") },
       { taskId: id("two"), scenarioId: id("no") },
@@ -273,7 +354,17 @@ describe("Business read service on isolated in-memory PostgreSQL", () => {
   afterAll(() => pg.close());
   it("loads actual joins without duplication and uses only the chosen assessment context", async () => {
     const x = await getBusinessData("synthetic-lab", db as unknown as Database);
-    expect(x.summary(id("root"), id("tech")).scenarios).toHaveLength(1);
+    const missing = x.facts.processes.find(
+      (p) => p.missingClassification && !p.parentId,
+    )!;
+    expect(missing.name).toBe("Функциональная группа не определена");
+    expect(x.summary(missing.id).scenarios.map((s) => s.id)).toEqual([
+      id("no"),
+    ]);
+    expect(x.summary(id("safety"), id("tech")).scenarios).toHaveLength(1);
+    expect(
+      x.facts.processes.filter((p) => !p.parentId).map((p) => p.name),
+    ).not.toContain("Процесс");
     expect(x.forTask(id("one"))).toHaveLength(1);
     expect(x.effectsFor(x.summary().scenarios)).toHaveLength(1);
     expect(x.casesFor(x.summary().scenarios)).toHaveLength(1);
