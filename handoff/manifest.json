@@ -1,0 +1,142 @@
+{
+  "format": "ctv-handoff-v1",
+  "sourceRepository": "mihajlovfeda3/ctv-platform",
+  "sourceCommit": "6fd4fae8c0f98b51cb4117c8d2852c9dbae3d26e",
+  "capturedAt": "2026-11-09T09:55:56.786Z",
+  "snapshotSha256": "1a0b4f9543c04fdf005d3b0aef69f5002e6b7aaae5674d9798b123534c61ed35",
+  "dataKind": "synthetic demonstration data",
+  "scenarios": 80,
+  "tables": [
+    {
+      "name": "sources",
+      "rows": 2,
+      "checksum": "1a123ca081143e886a173b589bf3660d"
+    },
+    {
+      "name": "business_directions",
+      "rows": 31,
+      "checksum": "7608988109b8ee33e3d7cb80c7db8c6f"
+    },
+    {
+      "name": "business_nodes",
+      "rows": 28,
+      "checksum": "37874a97913e6cf8be76ed87eb5d0a9d"
+    },
+    {
+      "name": "effect_types",
+      "rows": 4,
+      "checksum": "e9adc36d14bb4738952769dbeff5b53a"
+    },
+    {
+      "name": "functional_groups",
+      "rows": 35,
+      "checksum": "aba0526a2103186c227986fb18fb546b"
+    },
+    {
+      "name": "import_batches",
+      "rows": 0,
+      "checksum": "d751713988987e9331980363e24189ce"
+    },
+    {
+      "name": "organizational_blocks",
+      "rows": 11,
+      "checksum": "1507a0332bb4c1ed1ce218909192b82f"
+    },
+    {
+      "name": "organizations",
+      "rows": 1,
+      "checksum": "9ccaaa16e9989cfb713a3c9615dfe0c8"
+    },
+    {
+      "name": "internal_projects",
+      "rows": 6,
+      "checksum": "ef5642ae16cdc62079113ad60124db32"
+    },
+    {
+      "name": "scenarios",
+      "rows": 80,
+      "checksum": "cf7a2079feccf967e6d5142ef3aed7e1"
+    },
+    {
+      "name": "import_rows",
+      "rows": 0,
+      "checksum": "d751713988987e9331980363e24189ce"
+    },
+    {
+      "name": "scenario_assessments",
+      "rows": 285,
+      "checksum": "aec2b819ce91266df37a45c923dc32b8"
+    },
+    {
+      "name": "scenario_classification",
+      "rows": 80,
+      "checksum": "1da5f7618f2650b950ecfbfc43ca9834"
+    },
+    {
+      "name": "scenario_effects",
+      "rows": 80,
+      "checksum": "61a670173743b435eeb50fbd5ec11796"
+    },
+    {
+      "name": "scenario_projects",
+      "rows": 20,
+      "checksum": "36af27f206e8a9a9b8f300b079867352"
+    },
+    {
+      "name": "task_classes",
+      "rows": 20,
+      "checksum": "8ffe8709b329cc629432bb21d54883da"
+    },
+    {
+      "name": "scenario_tasks",
+      "rows": 80,
+      "checksum": "4e992a366cc58b140bdc1d512139aea2"
+    },
+    {
+      "name": "technology_directions",
+      "rows": 14,
+      "checksum": "91fab2d1d2461038783a55214fa13943"
+    },
+    {
+      "name": "key_technologies",
+      "rows": 56,
+      "checksum": "a050746387de07c620119f9f82166fd5"
+    },
+    {
+      "name": "technology_methods",
+      "rows": 129,
+      "checksum": "2f344af28f5524d09b5df8994f30f765"
+    },
+    {
+      "name": "scenario_technologies",
+      "rows": 80,
+      "checksum": "a6f259ec8f71eb3efabe696e4bb6e185"
+    },
+    {
+      "name": "vendors",
+      "rows": 4,
+      "checksum": "274bedec5aa4715e2f758444bacdd8d5"
+    },
+    {
+      "name": "vendor_solutions",
+      "rows": 8,
+      "checksum": "b401d7be82eb7f02a59f5af63ceea9b4"
+    },
+    {
+      "name": "benchmark_cases",
+      "rows": 8,
+      "checksum": "c130ffd5dc7fe3c31dab4a1141468c7d"
+    },
+    {
+      "name": "scenario_cases",
+      "rows": 27,
+      "checksum": "556991db39b9f304915e826a145c00c3"
+    },
+    {
+      "name": "scenario_solutions",
+      "rows": 40,
+      "checksum": "cbb0d56a2eb82ac43ed35d6b2078f338"
+    }
+  ],
+  "deploymentIncluded": false
+}
